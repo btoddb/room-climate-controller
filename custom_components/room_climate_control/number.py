@@ -1,0 +1,212 @@
+"""Number platform: room targets/offsets and profile preset temperatures."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from homeassistant.components.number import NumberMode, RestoreNumber
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from .const import (
+    DEFAULT_HIGH_OFFSET,
+    DEFAULT_MEDIUM_OFFSET,
+    DEVICE_ICONS,
+    KEY_HIGH_OFFSET,
+    KEY_MEDIUM_OFFSET,
+    KEY_PROFILE_PRESET,
+    KEY_TARGET,
+    OFFSET_MAX,
+    OFFSET_MIN,
+    SIGNAL_ADD_PROFILE_ENTITIES,
+    TEMP_UNIT,
+)
+from .entity import ProfileRemovalMixin, profile_device_info, room_device_info
+from .hub import RoomClimateConfigEntry
+from .models import Profile, Room, profile_uid, room_uid
+
+
+@dataclass(frozen=True)
+class _NumberSpec:
+    key: str
+    name: str
+    icon: str
+    minimum: float
+    maximum: float
+    step: float
+    default: float
+
+
+def _room_specs(room: Room) -> list[_NumberSpec]:
+    specs: list[_NumberSpec] = []
+    for device in room.devices:
+        limits = room.limits[device]
+        specs.append(
+            _NumberSpec(
+                key=KEY_TARGET[device],
+                name={
+                    "cooling": "Cooling target",
+                    "heating": "Heating target",
+                    "fan": "Fan target",
+                }[device],
+                icon=DEVICE_ICONS[device],
+                minimum=limits["min"],
+                maximum=limits["max"],
+                step=1,
+                default=limits["min"],
+            )
+        )
+        specs.append(
+            _NumberSpec(
+                key=KEY_MEDIUM_OFFSET[device],
+                name=f"{device.capitalize()} medium offset",
+                icon="mdi:fan-speed-2",
+                minimum=OFFSET_MIN,
+                maximum=OFFSET_MAX,
+                step=1,
+                default=DEFAULT_MEDIUM_OFFSET,
+            )
+        )
+        specs.append(
+            _NumberSpec(
+                key=KEY_HIGH_OFFSET[device],
+                name=f"{device.capitalize()} high offset",
+                icon="mdi:fan-speed-3",
+                minimum=OFFSET_MIN,
+                maximum=OFFSET_MAX,
+                step=1,
+                default=DEFAULT_HIGH_OFFSET,
+            )
+        )
+    return specs
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: RoomClimateConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Set up room and profile number entities."""
+    hub = entry.runtime_data
+
+    for room in hub.rooms.values():
+        async_add_entities(
+            [RoomNumber(entry, room, spec) for spec in _room_specs(room)],
+            config_subentry_id=room.room_id,
+        )
+
+    @callback
+    def _add_profile(profile: Profile) -> None:
+        room = hub.room_by_key(profile.room)
+        if room is None:
+            return
+        entities = [
+            ProfilePresetNumber(entry, profile, room, device)
+            for device in room.devices
+        ]
+        if entities:
+            async_add_entities(entities)
+
+    for profile in hub.profiles:
+        _add_profile(profile)
+
+    entry.async_on_unload(
+        async_dispatcher_connect(hass, SIGNAL_ADD_PROFILE_ENTITIES, _add_profile)
+    )
+
+
+class RoomNumber(RestoreNumber):
+    """A user-settable per-room number (target temp or fan-speed offset)."""
+
+    _attr_has_entity_name = True
+    _attr_mode = NumberMode.BOX
+
+    def __init__(
+        self, entry: RoomClimateConfigEntry, room: Room, spec: _NumberSpec
+    ) -> None:
+        """Initialize the number."""
+        self._attr_unique_id = room_uid(entry.entry_id, room.key, spec.key)
+        self._attr_name = spec.name
+        self._attr_icon = spec.icon
+        self._attr_native_min_value = spec.minimum
+        self._attr_native_max_value = spec.maximum
+        self._attr_native_step = spec.step
+        self._attr_native_unit_of_measurement = TEMP_UNIT
+        self._attr_device_info = room_device_info(entry, room)
+        self._default = spec.default
+
+    async def async_added_to_hass(self) -> None:
+        """Restore the last value or fall back to the default."""
+        await super().async_added_to_hass()
+        data = await self.async_get_last_number_data()
+        if data is not None and data.native_value is not None:
+            self._attr_native_value = data.native_value
+        else:
+            self._attr_native_value = self._default
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update the value."""
+        self._attr_native_value = value
+        self.async_write_ha_state()
+
+
+class ProfilePresetNumber(ProfileRemovalMixin, RestoreNumber):
+    """A profile's per-device preset target temperature."""
+
+    _attr_has_entity_name = True
+    _attr_mode = NumberMode.BOX
+
+    def __init__(
+        self,
+        entry: RoomClimateConfigEntry,
+        profile: Profile,
+        room: Room,
+        device: str,
+    ) -> None:
+        """Initialize the preset number."""
+        self._entry = entry
+        self._profile_id = profile.id
+        self._device = device
+        limits = room.limits[device]
+        self._attr_unique_id = profile_uid(
+            entry.entry_id, profile.id, KEY_PROFILE_PRESET[device]
+        )
+        self._attr_name = f"{device.capitalize()} target"
+        self._attr_icon = DEVICE_ICONS[device]
+        self._attr_native_min_value = limits["min"]
+        self._attr_native_max_value = limits["max"]
+        self._attr_native_step = 1
+        self._attr_native_unit_of_measurement = TEMP_UNIT
+        self._attr_device_info = profile_device_info(entry, profile)
+        self._default = profile.presets.get(device)
+
+    async def async_added_to_hass(self) -> None:
+        """Restore the last value, defaulting to the profile's stored preset."""
+        await super().async_added_to_hass()
+        self._connect_profile_removal()
+        data = await self.async_get_last_number_data()
+        if data is not None and data.native_value is not None:
+            self._attr_native_value = data.native_value
+        elif self._default is not None:
+            self._attr_native_value = self._default.temp
+        else:
+            self._attr_native_value = self._attr_native_min_value
+        self._sync_to_store()
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update the preset temp and persist to the profile store."""
+        self._attr_native_value = value
+        self.async_write_ha_state()
+        self._sync_to_store()
+
+    @callback
+    def _sync_to_store(self) -> None:
+        hub = self._entry.runtime_data
+        profile = hub.get_profile(self._profile_id)
+        if profile is None or self._attr_native_value is None:
+            return
+        preset = profile.presets.get(self._device)
+        if preset is not None and preset.temp != self._attr_native_value:
+            preset.temp = float(self._attr_native_value)
+            self.hass.async_create_task(hub.async_save())

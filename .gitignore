@@ -4,14 +4,18 @@ __pycache__
 *.egg-info
 */build/*
 */dist/*
+node_modules
 
+# local stuff
+.devcontainer-lock.json
+.claude
+CLAUDE.md
 
 # misc
 .coverage
 .vscode
 coverage.xml
 .ruff_cache
-
 
 # Home Assistant configuration
 config/*

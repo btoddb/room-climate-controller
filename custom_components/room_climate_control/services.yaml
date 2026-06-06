@@ -1,0 +1,20 @@
+apply_profile:
+  fields:
+    profile_id:
+      required: true
+      example: "01"
+      selector:
+        text:
+
+set_manual_mode:
+  fields:
+    room:
+      required: true
+      example: todds_bedroom
+      selector:
+        text:
+    enabled:
+      required: true
+      example: true
+      selector:
+        boolean:

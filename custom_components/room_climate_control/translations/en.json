@@ -1,0 +1,115 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Room Climate",
+        "description": "This creates the Room Climate hub. After setup, add your rooms from the integration's “Add room” option."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Room Climate is already configured. Add rooms from the existing entry."
+    }
+  },
+  "config_subentries": {
+    "room": {
+      "initiate_flow": {
+        "user": "Add room",
+        "reconfigure": "Reconfigure room"
+      },
+      "entry_type": "Room",
+      "step": {
+        "user": {
+          "title": "Room basics",
+          "description": "Name the room and choose which kinds of climate devices it has.",
+          "data": {
+            "label": "Room name",
+            "room_key": "Room key (optional, auto-derived from the name)",
+            "area_id": "Area",
+            "has_ac": "Has air conditioning / cooling",
+            "has_heater": "Has heating",
+            "has_fan": "Has a standalone fan",
+            "combined": "Cooling and heating are the same unit (heat pump)"
+          }
+        },
+        "reconfigure": {
+          "title": "Room basics",
+          "description": "Update the room name and its capabilities.",
+          "data": {
+            "label": "Room name",
+            "room_key": "Room key",
+            "area_id": "Area",
+            "has_ac": "Has air conditioning / cooling",
+            "has_heater": "Has heating",
+            "has_fan": "Has a standalone fan",
+            "combined": "Cooling and heating are the same unit (heat pump)"
+          }
+        },
+        "devices": {
+          "title": "Devices",
+          "description": "Pick the entities Room Climate should command for this room. Leave any blank if not applicable.",
+          "data": {
+            "ac_climate": "A/C climate entity",
+            "ac_fan_entity": "A/C companion fan (for speed control)",
+            "ac_power_switch": "A/C power switch (optional pre-power gate)",
+            "ac_fan_only_override": "Allow A/C fan-only circulation",
+            "heater_climate": "Heater climate entity",
+            "heater_fan_entity": "Heater companion fan",
+            "heater_power_switch": "Heater power switch",
+            "heater_fan_only_override": "Allow heater fan-only circulation",
+            "fan_entity": "Standalone fan entity"
+          }
+        },
+        "sensors": {
+          "title": "Sensors, limits & timing",
+          "description": "Choose the room's sensors and the temperature limits/timing the controller should use.",
+          "data": {
+            "temperature_sensor": "Temperature sensor",
+            "humidity_sensor": "Humidity sensor (optional)",
+            "power_sensor": "Power sensor (optional)",
+            "cooling_min": "Cooling minimum (°F)",
+            "cooling_max": "Cooling maximum (°F)",
+            "heating_min": "Heating minimum (°F)",
+            "heating_max": "Heating maximum (°F)",
+            "fan_min": "Fan minimum (°F)",
+            "fan_max": "Fan maximum (°F)",
+            "command_delay_seconds": "Delay after a mode change (seconds)",
+            "power_on_delay_seconds": "Delay after powering on (seconds)"
+          }
+        }
+      },
+      "error": {
+        "invalid_key": "Provide a valid room key.",
+        "key_exists": "Another room already uses this key."
+      },
+      "abort": {
+        "reconfigure_successful": "Room updated."
+      }
+    }
+  },
+  "services": {
+    "apply_profile": {
+      "name": "Apply profile",
+      "description": "Apply a daily climate profile's presets to its room now.",
+      "fields": {
+        "profile_id": {
+          "name": "Profile",
+          "description": "The id of the profile to apply."
+        }
+      }
+    },
+    "set_manual_mode": {
+      "name": "Set manual mode",
+      "description": "Turn a room's manual mode (automation kill switch) on or off.",
+      "fields": {
+        "room": {
+          "name": "Room",
+          "description": "The room key."
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Whether manual mode is on."
+        }
+      }
+    }
+  }
+}

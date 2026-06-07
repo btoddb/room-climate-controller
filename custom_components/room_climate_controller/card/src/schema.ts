@@ -11,9 +11,18 @@ export const FORM_LABELS: Record<string, string> = {
   room: "Room",
   outdoor_sensor: "Outdoor temperature sensor",
   time_range: "Graph time-range helper",
+  ac_device_button: "A/C lights & sound button (tap_action)",
+  heater_device_button: "Heater lights & sound button (tap_action)",
+  fan_device_button: "Fan lights & sound button (tap_action)",
 };
 
-export type FormFieldName = "room" | "outdoor_sensor" | "time_range";
+export type FormFieldName =
+  | "room"
+  | "outdoor_sensor"
+  | "time_range"
+  | "ac_device_button"
+  | "heater_device_button"
+  | "fan_device_button";
 
 /** Keys the editor should clear from the config when left empty. */
 export const OPTIONAL_FIELDS: FormFieldName[] = ["outdoor_sensor", "time_range"];

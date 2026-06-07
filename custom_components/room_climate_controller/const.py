@@ -11,6 +11,7 @@ DOMAIN: Final = "room_climate_controller"
 PLATFORMS: Final = [
     Platform.SENSOR,
     Platform.NUMBER,
+    Platform.SELECT,
     Platform.SWITCH,
     Platform.TIME,
 ]
@@ -74,6 +75,12 @@ CONF_POWER_SENSOR: Final = "power_sensor"
 # Optional: if unset, no outdoor-temperature mirror is created.
 CONF_OUTDOOR_SENSOR: Final = "outdoor_sensor"
 
+# Hub-level graph time-range selector (hours the card's graphs show). Owned by
+# the integration so a fresh install has a working selector without the user
+# having to create an input_select helper.
+GRAPH_TIME_RANGE_OPTIONS: Final = ["6", "12", "24", "48", "168"]
+DEFAULT_GRAPH_TIME_RANGE: Final = "24"
+
 # Fan-only override availability
 CONF_AC_FAN_ONLY: Final = "ac_fan_only_override"
 CONF_HEATER_FAN_ONLY: Final = "heater_fan_only_override"
@@ -134,6 +141,7 @@ KEY_ROOM_POWER: Final = "room_power"
 
 # --- Hub entity keys --------------------------------------------------------
 KEY_OUTDOOR_TEMPERATURE: Final = "outdoor_temperature"
+KEY_GRAPH_TIME_RANGE: Final = "graph_time_range"
 
 # --- Profile entity keys ----------------------------------------------------
 KEY_PROFILE_ENABLED: Final = "enabled"

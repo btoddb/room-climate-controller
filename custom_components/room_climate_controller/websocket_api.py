@@ -18,6 +18,7 @@ from .apply import async_apply_profile
 from .const import (
     DOMAIN,
     KEY_AC_FAN_ONLY,
+    KEY_GRAPH_TIME_RANGE,
     KEY_HEATER_FAN_ONLY,
     KEY_HIGH_OFFSET,
     KEY_MANUAL_MODE,
@@ -90,7 +91,9 @@ def _require_entry(
 # ---------------------------------------------------------------------------
 # Serialization
 # ---------------------------------------------------------------------------
-def _serialize_room(hass: HomeAssistant, entry: RoomClimateConfigEntry, room: Room) -> dict:
+def _serialize_room(
+    hass: HomeAssistant, entry: RoomClimateConfigEntry, room: Room
+) -> dict:
     eid = entry.entry_id
 
     def rr(key: str, domain: str) -> str | None:
@@ -126,10 +129,14 @@ def _serialize_room(hass: HomeAssistant, entry: RoomClimateConfigEntry, room: Ro
                 else None
             ),
             "temperature": rr(KEY_ROOM_TEMPERATURE, "sensor"),
-            "humidity": rr(KEY_ROOM_HUMIDITY, "sensor") if room.humidity_sensor else None,
+            "humidity": rr(KEY_ROOM_HUMIDITY, "sensor")
+            if room.humidity_sensor
+            else None,
             "power": rr(KEY_ROOM_POWER, "sensor") if room.power_sensor else None,
             # Hub-level outdoor temperature abstraction (same for every room).
             "outdoor": resolve_hub_entity(hass, eid, KEY_OUTDOOR_TEMPERATURE, "sensor"),
+            # Hub-level graph time-range selector (same for every room).
+            "time_range": resolve_hub_entity(hass, eid, KEY_GRAPH_TIME_RANGE, "select"),
             # The physical devices the room drives (so the card can render their
             # state without re-specifying them — they live in the subentry config).
             "ac_entity": room.ac_climate if room.has_ac else None,
@@ -184,7 +191,9 @@ def _serialize_profile(
 # ---------------------------------------------------------------------------
 # Read commands
 # ---------------------------------------------------------------------------
-@websocket_api.websocket_command({vol.Required("type"): "room_climate_controller/rooms/list"})
+@websocket_api.websocket_command(
+    {vol.Required("type"): "room_climate_controller/rooms/list"}
+)
 @callback
 def ws_list_rooms(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
@@ -195,11 +204,18 @@ def ws_list_rooms(
         return
     connection.send_result(
         msg["id"],
-        {"rooms": [_serialize_room(hass, entry, r) for r in entry.runtime_data.rooms.values()]},
+        {
+            "rooms": [
+                _serialize_room(hass, entry, r)
+                for r in entry.runtime_data.rooms.values()
+            ]
+        },
     )
 
 
-@websocket_api.websocket_command({vol.Required("type"): "room_climate_controller/profiles/list"})
+@websocket_api.websocket_command(
+    {vol.Required("type"): "room_climate_controller/profiles/list"}
+)
 @callback
 def ws_list_profiles(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
@@ -210,7 +226,11 @@ def ws_list_profiles(
         return
     connection.send_result(
         msg["id"],
-        {"profiles": [_serialize_profile(hass, entry, p) for p in entry.runtime_data.profiles]},
+        {
+            "profiles": [
+                _serialize_profile(hass, entry, p) for p in entry.runtime_data.profiles
+            ]
+        },
     )
 
 
@@ -237,11 +257,15 @@ async def ws_create_profile(
     hub = entry.runtime_data
     name = msg["name"].strip()
     if not name:
-        connection.send_error(msg["id"], websocket_api.const.ERR_INVALID_FORMAT, "Name required")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_INVALID_FORMAT, "Name required"
+        )
         return
     room = hub.room_by_key(msg["room"])
     if room is None:
-        connection.send_error(msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown room")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown room"
+        )
         return
 
     run_time: str | None = None
@@ -249,7 +273,9 @@ async def ws_create_profile(
         try:
             run_time = normalize_time_hhmm(raw_time)
         except ValueError as err:
-            connection.send_error(msg["id"], websocket_api.const.ERR_INVALID_FORMAT, str(err))
+            connection.send_error(
+                msg["id"], websocket_api.const.ERR_INVALID_FORMAT, str(err)
+            )
             return
         if conflict := find_time_conflict(hub.profiles, room.key, run_time):
             connection.send_error(
@@ -273,7 +299,9 @@ async def ws_create_profile(
         hub.scheduler.async_refresh()
     # Place the new profile's device in its room's area once its entities register.
     async_call_later(hass, 5, lambda _now: async_assign_areas(hass, entry))
-    connection.send_result(msg["id"], {"profile": _serialize_profile(hass, entry, profile)})
+    connection.send_result(
+        msg["id"], {"profile": _serialize_profile(hass, entry, profile)}
+    )
 
 
 @websocket_api.websocket_command(
@@ -294,7 +322,9 @@ async def ws_delete_profile(
     pid = format_profile_id(msg["profile_id"])
     profile = hub.get_profile(pid)
     if profile is None:
-        connection.send_error(msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile"
+        )
         return
 
     hub.profiles = [p for p in hub.profiles if p.id != pid]
@@ -325,11 +355,15 @@ async def ws_rename_profile(
     pid = format_profile_id(msg["profile_id"])
     profile = hub.get_profile(pid)
     if profile is None:
-        connection.send_error(msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile"
+        )
         return
     name = msg["name"].strip()
     if not name:
-        connection.send_error(msg["id"], websocket_api.const.ERR_INVALID_FORMAT, "Name required")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_INVALID_FORMAT, "Name required"
+        )
         return
 
     profile.name = name
@@ -340,7 +374,9 @@ async def ws_rename_profile(
     )
     if device:
         dev_reg.async_update_device(device.id, name=name)
-    connection.send_result(msg["id"], {"profile": _serialize_profile(hass, entry, profile)})
+    connection.send_result(
+        msg["id"], {"profile": _serialize_profile(hass, entry, profile)}
+    )
 
 
 @websocket_api.websocket_command(
@@ -362,18 +398,20 @@ async def ws_set_room(
     pid = format_profile_id(msg["profile_id"])
     profile = hub.get_profile(pid)
     if profile is None:
-        connection.send_error(msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile"
+        )
         return
     room = hub.room_by_key(msg["room"])
     if room is None:
-        connection.send_error(msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown room")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown room"
+        )
         return
 
     # The profile's preset entities depend on the room's device set, so rebuild
     # cleanly via reload rather than surgically swapping entities.
-    hub.profiles = [
-        p.reassigned_to(room) if p.id == pid else p for p in hub.profiles
-    ]
+    hub.profiles = [p.reassigned_to(room) if p.id == pid else p for p in hub.profiles]
     await hub.async_save()
     await hass.config_entries.async_reload(entry.entry_id)
     connection.send_result(msg["id"], {"success": True})
@@ -395,7 +433,9 @@ async def ws_apply_profile(
         return
     profile = entry.runtime_data.get_profile(format_profile_id(msg["profile_id"]))
     if profile is None:
-        connection.send_error(msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile")
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_NOT_FOUND, "Unknown profile"
+        )
         return
     await async_apply_profile(entry, profile, force=True)
     connection.send_result(msg["id"], {"success": True})
@@ -422,7 +462,7 @@ def _copy_room_into_profile(
         if target_eid and (state := hass.states.get(target_eid)) is not None:
             try:
                 preset.temp = float(state.state)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 pass
     if room.has_ac and room.ac_fan_only:
         if ov_eid := resolve_room_entity(

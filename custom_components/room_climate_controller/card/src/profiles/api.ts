@@ -49,6 +49,7 @@ export interface WsRoom {
     humidity: string | null;
     power: string | null;
     outdoor: string | null;
+    time_range: string | null;
     ac_entity: string | null;
     heater_entity: string | null;
     fan_entity: string | null;

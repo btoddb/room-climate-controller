@@ -415,11 +415,15 @@ export class RoomClimateControl extends LitElement {
     const timeRange = c.time_range || DEFAULT_TIME_RANGE;
     const hours = parseInt(this.hass.states[timeRange]?.state || "24", 10) || 24;
 
-    const rangeCard = await createLovelaceCard(
-      this.hass,
-      buildTimeRangeConfig(timeRange) as LovelaceCardConfig
-    );
-    if (rangeCard) host.appendChild(rangeCard);
+    // Only show the range selector when a time-range entity is known (the
+    // integration provides one; falls back to a fixed window otherwise).
+    if (timeRange) {
+      const rangeCard = await createLovelaceCard(
+        this.hass,
+        buildTimeRangeConfig(timeRange) as LovelaceCardConfig
+      );
+      if (rangeCard) host.appendChild(rangeCard);
+    }
 
     if (this._graphDialog === "energy") {
       if (entityConfigured(c.power_sensor)) {

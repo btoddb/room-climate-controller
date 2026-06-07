@@ -64,7 +64,9 @@ export interface RoomClimateControlConfig extends LovelaceCardConfig {
 export type DialogType = "settings" | "energy" | "history" | null;
 
 export const DEFAULT_OUTDOOR_SENSOR = "sensor.outdoor_temperature";
-export const DEFAULT_TIME_RANGE = "input_select.time_range";
+// The integration owns the time-range select and the card discovers its entity
+// id from rooms/list, so there is no hard default to fall back to.
+export const DEFAULT_TIME_RANGE = "";
 
 export function defaultConfig(
   partial: Partial<RoomClimateControlConfig> = {}

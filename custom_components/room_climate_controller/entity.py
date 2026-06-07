@@ -34,9 +34,7 @@ def resolve_hub_entity(
     hass: HomeAssistant, entry_id: str, key: str, domain: str
 ) -> str | None:
     """Resolve a hub-scoped entity id (e.g. the outdoor temperature mirror)."""
-    return er.async_get(hass).async_get_entity_id(
-        domain, DOMAIN, f"{entry_id}_{key}"
-    )
+    return er.async_get(hass).async_get_entity_id(domain, DOMAIN, f"{entry_id}_{key}")
 
 
 def hub_identifier(entry_id: str) -> tuple[str, str]:
@@ -49,7 +47,7 @@ def room_device_info(entry: ConfigEntry, room: Room) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, f"{entry.entry_id}_room_{room.key}")},
         name=room.label,
-        manufacturer="Room Climate",
+        manufacturer="Room Climate Controller",
         model="Room",
         via_device=hub_identifier(entry.entry_id),
     )
@@ -60,7 +58,7 @@ def profile_device_info(entry: ConfigEntry, profile: Profile) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, f"{entry.entry_id}_profile_{profile.id}")},
         name=profile.name,
-        manufacturer="Room Climate",
+        manufacturer="Room Climate Controller",
         model="Daily profile",
         via_device=hub_identifier(entry.entry_id),
     )

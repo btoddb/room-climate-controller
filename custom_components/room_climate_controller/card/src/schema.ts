@@ -41,7 +41,7 @@ const PRESENTATION_FIELDS = [
   },
   {
     name: "time_range",
-    selector: { entity: { filter: [{ domain: "input_select" }] } },
+    selector: { entity: { filter: [{ domain: "select" }, { domain: "input_select" }] } },
   },
 ] as const;
 
@@ -71,13 +71,22 @@ export function buildFormSchema(rooms: ClimateRoomMeta[]) {
   ];
 }
 
+/** Defaults discovered from the integration for the chosen room, used to
+pre-fill the editor's presentation fields (e.g. the hub's outdoor sensor and
+graph time-range select provided at hub setup). */
+export interface DiscoveredDefaults {
+  outdoor_sensor?: string | null;
+  time_range?: string | null;
+}
+
 export function formDataFromConfig(
-  config: Record<string, unknown>
+  config: Record<string, unknown>,
+  defaults: DiscoveredDefaults = {}
 ): Record<string, unknown> {
   return {
     room: config.room ?? "",
-    outdoor_sensor: config.outdoor_sensor ?? "",
-    time_range: config.time_range ?? "",
+    outdoor_sensor: config.outdoor_sensor ?? defaults.outdoor_sensor ?? "",
+    time_range: config.time_range ?? defaults.time_range ?? "",
     ac_device_button: config.ac_device_button,
     heater_device_button: config.heater_device_button,
     fan_device_button: config.fan_device_button,

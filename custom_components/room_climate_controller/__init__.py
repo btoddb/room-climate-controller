@@ -36,7 +36,13 @@ SERVICE_SET_MANUAL_MODE = "set_manual_mode"
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register websocket commands and services (once)."""
     await hass.http.async_register_static_paths(
-        [StaticPathConfig("/room_climate_controller", str(Path(__file__).parent / "www"), cache_headers=False)]
+        [
+            StaticPathConfig(
+                "/room_climate_controller",
+                str(Path(__file__).parent / "www"),
+                cache_headers=False,
+            )
+        ]
     )
     # Ship the Lovelace card with the integration: serve it and register it as a
     # frontend module so users don't have to add a resource by hand.
@@ -98,9 +104,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: RoomClimateConfigEntry
-) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: RoomClimateConfigEntry) -> bool:
     """Set up Room Climate from a config entry."""
     hub = RoomClimateHub(hass, entry)
     await hub.async_load()
@@ -109,7 +113,7 @@ async def async_setup_entry(
     dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.entry_id)},
-        manufacturer="Room Climate",
+        manufacturer="Room Climate Controller",
         name=entry.title,
         entry_type=dr.DeviceEntryType.SERVICE,
     )

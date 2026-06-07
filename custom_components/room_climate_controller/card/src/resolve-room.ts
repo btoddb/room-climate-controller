@@ -79,10 +79,10 @@ export function resolveRoomConfig(
     target_fan: fan.target ?? "",
     fan_medium_offset: fan.medium_offset ?? "",
     fan_high_offset: fan.high_offset ?? "",
-    // Presentation-only fields the integration doesn't own. Outdoor falls back
-    // to the integration's hub abstraction sensor before the hard default.
+    // Outdoor + time-range fall back to the integration's hub entities (the
+    // outdoor mirror and the graph time-range select) before any hard default.
     outdoor_sensor: user.outdoor_sensor ?? e.outdoor ?? DEFAULT_OUTDOOR_SENSOR,
-    time_range: user.time_range ?? DEFAULT_TIME_RANGE,
+    time_range: user.time_range ?? e.time_range ?? DEFAULT_TIME_RANGE,
     ac_device_button: user.ac_device_button,
     heater_device_button: user.heater_device_button,
     fan_device_button: user.fan_device_button,

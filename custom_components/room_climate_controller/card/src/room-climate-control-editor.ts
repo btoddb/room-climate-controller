@@ -11,6 +11,7 @@ import {
 import {
   climateRooms,
   refreshProfiles,
+  roomMetaByKey,
   subscribeProfiles,
   type ClimateRoomMeta,
 } from "./profiles/store";
@@ -55,6 +56,13 @@ export class RoomClimateControlEditor extends LitElement {
   protected render() {
     if (!this.hass || !this._config) return html``;
     const rooms = climateRooms();
+    // Pre-fill outdoor + time-range from the chosen room's hub entities so a new
+    // card defaults to what was provided at hub setup.
+    const hub = roomMetaByKey(this._config.room ?? "")?.entities;
+    const data = formDataFromConfig(this._config, {
+      outdoor_sensor: hub?.outdoor,
+      time_range: hub?.time_range,
+    });
 
     return html`
       ${rooms.length === 0
@@ -68,7 +76,7 @@ export class RoomClimateControlEditor extends LitElement {
           </div>`}
       <ha-form
         .hass=${this.hass}
-        .data=${formDataFromConfig(this._config)}
+        .data=${data}
         .schema=${this._getSchema(rooms)}
         .computeLabel=${this._computeLabel}
         @value-changed=${this._valueChanged}

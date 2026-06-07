@@ -1,0 +1,47 @@
+# Sample Lovelace dashboard for Room Climate Controller.
+#
+# The card discovers each room's sensors, devices, and helpers from the
+# integration, so the only field you must set is `room` — the room key you chose
+# when adding the room (Settings -> Devices & Services -> Room Climate Controller
+# -> Add room). Change the keys below to match yours.
+#
+# How to use:
+#   Settings -> Dashboards -> (new dashboard) -> three-dots -> Edit dashboard
+#   -> three-dots -> Raw configuration editor -> paste this.
+# The card itself is auto-registered by the integration, so you do NOT need to
+# add a Lovelace resource by hand.
+#
+# Prerequisites for the Energy/History graph dialogs:
+#   1. Install "lovelace-plotly-graph-card" via HACS.
+#   2. Create the graph time-range helper (Settings -> Devices & Services ->
+#      Helpers -> Create helper -> Dropdown), entity id input_select.time_range,
+#      with options like: 6, 12, 24, 48, 168  (hours). Example YAML form:
+#
+#      input_select:
+#        time_range:
+#          name: Time range
+#          options: ["6", "12", "24", "48", "168"]
+#          initial: "24"
+#
+# Optional per-card presentation overrides (all have sensible defaults):
+#   outdoor_sensor: sensor.<hub>_outdoor_temperature   # auto-filled by the integration
+#   time_range: input_select.time_range
+#   ac_device_button / heater_device_button / fan_device_button:  # lights & sound
+#     name: Lights & Sound
+#     tap_action:
+#       action: perform-action
+#       perform_action: remote.send_command
+#       target: { entity_id: remote.todd_s_bedroom_remote }
+#       data: { num_repeats: 1, delay_secs: 0.4, hold_secs: 0, device: "Todd's A/C", command: lights }
+
+title: Climate
+views:
+  - title: Climate
+    path: climate
+    cards:
+      - type: custom:room-climate-control
+        room: todds_bedroom
+      - type: custom:room-climate-control
+        room: office
+      - type: custom:room-climate-control
+        room: main_floor

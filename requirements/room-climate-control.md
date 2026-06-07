@@ -1,6 +1,6 @@
 ## Overview
 
-I want to create a new per room climate control mechanism in HA.  It will automate controlling the climate devices in the room to maintain the user's desired target temperature and humidity.  Furthermore, it should also automatically control the fan speed of each device, if there is one.  You should create and modify anything in Home Assistant to reach your goal.
+I want to create a new per room climate control mechanism in HA.  It will automate controlling the climate devices in the room to maintain the user's desired target temperature and humidity.  Furthermore, it should also automatically control the fan speed of each device, if there is one.  It should be implemented as a custom_component, reusable by anyone that wishes to install it, and installable by HACS.
 
 ## UI Style
 
@@ -9,16 +9,16 @@ I want to create a new per room climate control mechanism in HA.  It will automa
 
 ## Implementation Notes
 
+
 - Disregard existing configuration, helpers, dashboards, etc that might resemble a previous attempt at coding this
 - Feel free to suggest additional HA extensions to make the task better, but install them using HACS
-- Create a blueprint for the backend automation
 - Create a sample dashboard and add a new Room Climate Control card for Todd's Bedroom, Office, and Main floor
-- For a room's temperature, humidity, and power sensors, create a sensor template helper to abstract the real sensor.  This abstraction makes it easier to change sensors as my home architecture evolves, without changing blueprints, scripts, helpers, automations, etc
+- For a room's temperature, humidity, and power sensors, create a sensor template helper to abstract the real sensor
 - If asked to create a graph, use plotly-graph and the input_select.time_range helper to define the range of the graph.
   - Be smart about grouping series to the left or right side of the graph
   - Do not show the grid
   - Do not fill below the lines
-  - Make the graph fully static except allow clicking on the items in the legend, which should toggle the serious on/off 
+  - Make the graph fully static except allow clicking on the items in the legend, which should toggle the serious on/off
   - For temperatures, use a fixed range from 20 to 100, and allow the range to grow if the temperatures are outside the range
   - When the time range changes, update the graph
   - Show the legend at the top and include the current values and units
@@ -164,7 +164,7 @@ Changing a setting should trigger running any rules affected by the setting.  Fo
 
 ## Room Climate Control Dashboard card
 
-Create a dashboard card, Room Climate Control, so the user can view relevant room sensors and control the climate for the room.  
+Create a dashboard card, Room Climate Control, so the user can view relevant room sensors and control the climate for the room.
 
 It should have a main panel that shows the following:
 - Heading with the room name, centered horizontally on the car, with a larger font than rest of text

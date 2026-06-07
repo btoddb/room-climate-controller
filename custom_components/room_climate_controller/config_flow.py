@@ -42,7 +42,6 @@ from .const import (
     CONF_TEMPERATURE_SENSOR,
     DEFAULT_COMMAND_DELAY,
     DEFAULT_LIMITS,
-    DEFAULT_OUTDOOR_SENSOR,
     DEFAULT_POWER_ON_DELAY,
     DEVICE_COOLING,
     DEVICE_FAN,
@@ -66,16 +65,13 @@ class RoomClimateConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             return self.async_create_entry(
                 title="Room Climate Controller",
-                data={
-                    CONF_OUTDOOR_SENSOR: user_input.get(CONF_OUTDOOR_SENSOR)
-                    or DEFAULT_OUTDOOR_SENSOR
-                },
+                data={CONF_OUTDOOR_SENSOR: user_input.get(CONF_OUTDOOR_SENSOR)},
             )
         schema = vol.Schema(
             {
-                vol.Optional(
-                    CONF_OUTDOOR_SENSOR, default=DEFAULT_OUTDOOR_SENSOR
-                ): _entity("sensor", device_classes=["temperature"]),
+                vol.Optional(CONF_OUTDOOR_SENSOR): _entity(
+                    "sensor", device_classes=["temperature"]
+                ),
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema)

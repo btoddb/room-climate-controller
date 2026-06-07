@@ -24,7 +24,6 @@ from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import (
     CONF_OUTDOOR_SENSOR,
-    DEFAULT_OUTDOOR_SENSOR,
     KEY_OUTDOOR_TEMPERATURE,
     KEY_ROOM_HUMIDITY,
     KEY_ROOM_POWER,
@@ -94,7 +93,7 @@ async def async_setup_entry(
                 config_subentry_id=room.room_id,
             )
 
-    outdoor_source = entry.data.get(CONF_OUTDOOR_SENSOR) or DEFAULT_OUTDOOR_SENSOR
+    outdoor_source = entry.data.get(CONF_OUTDOOR_SENSOR)
     if outdoor_source:
         async_add_entities([OutdoorMirrorSensor(entry, outdoor_source)])
 

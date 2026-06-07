@@ -6,6 +6,10 @@ __pycache__
 */dist/*
 node_modules
 
+# card build output (intermediate; deployed copy lives in www/)
+custom_components/room_climate_controller/card/room-climate-control-card.js
+custom_components/room_climate_controller/card/room-climate-control-card.js.map
+
 # local stuff
 .devcontainer-lock.json
 .claude

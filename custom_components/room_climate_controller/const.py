@@ -71,8 +71,8 @@ CONF_HUMIDITY_SENSOR: Final = "humidity_sensor"
 CONF_POWER_SENSOR: Final = "power_sensor"
 
 # Hub-level outdoor temperature source, mirrored into one abstraction sensor.
+# Optional: if unset, no outdoor-temperature mirror is created.
 CONF_OUTDOOR_SENSOR: Final = "outdoor_sensor"
-DEFAULT_OUTDOOR_SENSOR: Final = "sensor.btoddb_weather_outdoor_temperature"
 
 # Fan-only override availability
 CONF_AC_FAN_ONLY: Final = "ac_fan_only_override"

@@ -1,46 +1,44 @@
-# Notice
+# Room Climate Controller
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+A Home Assistant **custom integration** (HACS-installable) for per-room climate
+control and scheduled daily climate **profiles**, with a companion Lovelace card
+it ships and auto-registers.
 
-HAVE FUN! 😎
+- Per-room reactive control of A/C / heater / fan devices (cool / heat / fan-only /
+  off, plus fan-speed tiers) driven by a pure, unit-tested decision engine.
+- Daily **profiles**: named, scheduled per-room presets (use toggles, fan override,
+  target temps) created and edited from the card.
+- Native entities, HA areas, abstraction sensors (room temp/humidity/power + a
+  hub-level Outdoor Temperature), and plotly energy/history graphs.
 
-## Why?
+See [custom_components/room_climate_controller/README.md](custom_components/room_climate_controller/README.md)
+for full details, and [requirements/](requirements/) for the design requirements.
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+## Install
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+- **HACS:** add this repo as a custom repository (category: Integration), install,
+  restart HA, then **Settings → Devices & Services → Add Integration → "Room
+  Climate Controller"** and **Add room** per room.
+- **Manual:** copy `custom_components/room_climate_controller/` into your HA
+  `config/custom_components/`, restart, then add the integration as above.
 
-## What?
+A ready sample dashboard is in
+[`custom_components/room_climate_controller/examples/dashboard.yaml`](custom_components/room_climate_controller/examples/dashboard.yaml).
 
-This repository contains multiple files, here is a overview:
+## Development
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`custom_components/integration_blueprint/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+This repo uses the standard HA integration dev scaffold (devcontainer + `config/`):
 
-## How?
+- `scripts/develop` — run Home Assistant locally against `config/`.
+- `scripts/lint` — run ruff.
+- `python3 custom_components/room_climate_controller/tests/test_engine.py` — engine
+  unit tests (no HA required).
+- `cd custom_components/room_climate_controller/card && npm install && npm run build`
+  — rebuild the Lovelace card (edit `card/src/*.ts`, not the generated `www/` bundle).
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `integration_blueprint` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Integration Blueprint` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+See [CLAUDE.md](CLAUDE.md) for an architecture overview and [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Next steps
+### Installing integrations manually for testing
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon).
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+* Download zip file of custom component
+  * wget https://github.com/JeffSteinbok/hass-dreo/releases/download/v1.9.10/pydreo_community-1.9.10.tar.gz

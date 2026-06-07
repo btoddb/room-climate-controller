@@ -5,7 +5,7 @@
         "title": "Set up Room Climate Controller",
         "description": "This creates the Room Climate Controller hub. After setup, add your rooms from the integration's “Add room” option.",
         "data": {
-          "outdoor_sensor": "Outdoor temperature sensor (abstracted for graphs)"
+          "outdoor_sensor": "Outdoor temperature sensor"
         }
       }
     },

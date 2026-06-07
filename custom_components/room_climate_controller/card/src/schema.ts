@@ -8,7 +8,7 @@ import type { ClimateRoomMeta } from "./profiles/store";
 
 export const FORM_LABELS: Record<string, string> = {
   room: "Room",
-  outdoor_sensor: "Outdoor temperature sensor (graph)",
+  outdoor_sensor: "Outdoor temperature sensor",
   time_range: "Graph time-range helper",
   ac_device_button: "A/C lights & sound button (tap_action)",
   heater_device_button: "Heater lights & sound button (tap_action)",

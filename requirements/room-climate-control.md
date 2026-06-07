@@ -13,7 +13,6 @@ I want to create a new per room climate control mechanism in HA.  It will automa
 - Disregard existing configuration, helpers, dashboards, etc that might resemble a previous attempt at coding this
 - Feel free to suggest additional HA extensions to make the task better, but install them using HACS
 - Create a sample dashboard and add a new Room Climate Control card for Todd's Bedroom, Office, and Main floor
-- For a room's temperature, humidity, and power sensors, create a sensor template helper to abstract the real sensor
 - If asked to create a graph, use plotly-graph and the input_select.time_range helper to define the range of the graph.
   - Be smart about grouping series to the left or right side of the graph
   - Do not show the grid
@@ -23,7 +22,6 @@ I want to create a new per room climate control mechanism in HA.  It will automa
   - When the time range changes, update the graph
   - Show the legend at the top and include the current values and units
   - use refresh interval = 60
-- create a template sensor helper, Outdoor Temperature, that abstracts the actual entity, sensor.btoddb_weather_outdoor_temperature
 - Don't use browser_mod, if at all possible.  If it's the only way to implement something, ask me before using it
 - If a room does not have a device, like office doesn't have a heater, the device type should be ignored in all automations, dashboard cards, etc
 - When automations trigger notifications (for instance, because of errors), send them so they appear in HA's notifications tab

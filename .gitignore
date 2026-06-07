@@ -20,3 +20,7 @@ coverage.xml
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
+
+# don't commit extra custom components used for testing
+custom_components/*
+!custom_components/room_climate_controller

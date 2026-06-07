@@ -8,9 +8,14 @@
 # to add and no Home Assistant restart required.
 #
 # Requires Node/npm (provided by the devcontainer's Node feature).
+
+SCRIPTS_DIR=$(cd $(dirname $0); pwd)
+HOME_DIR=$(dirname ${SCRIPTS_DIR})
+echo "home dir = ${HOME_DIR}"
+
 set -euo pipefail
 
-CARD_DIR="$(cd "$(dirname "$0")" && pwd)"
+CARD_DIR="${HOME_DIR}/custom_components/room_climate_controller/card"
 COMPONENT_WWW="$(cd "$CARD_DIR/.." && pwd)/www"
 cd "$CARD_DIR"
 

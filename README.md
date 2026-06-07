@@ -37,3 +37,8 @@ This repo uses the standard HA integration dev scaffold (devcontainer + `config/
   — rebuild the Lovelace card (edit `card/src/*.ts`, not the generated `www/` bundle).
 
 See [CLAUDE.md](CLAUDE.md) for an architecture overview and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Installing integrations manually for testing
+
+* Download zip file of custom component
+  * wget https://github.com/JeffSteinbok/hass-dreo/releases/download/v1.9.10/pydreo_community-1.9.10.tar.gz

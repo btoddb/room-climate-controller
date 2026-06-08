@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+MANIFEST="$REPO_ROOT/custom_components/room_climate_controller/manifest.json"
+
+VERSION_TAG="${1:-}"
+if [[ -z "$VERSION_TAG" ]]; then
+    echo "Usage: $0 <version-tag>"
+    echo "ex: $0 v1.2.3"
+    exit 1
+fi
+
+# Verify tag not already used locally or remotely
+if git -C "$REPO_ROOT" tag --list "$VERSION_TAG" | grep -q .; then
+    echo "Error: tag '$VERSION_TAG' already exists locally"
+    exit 1
+fi
+
+if git -C "$REPO_ROOT" ls-remote --tags origin "refs/tags/$VERSION_TAG" | grep -q .; then
+    echo "Error: tag '$VERSION_TAG' already exists on remote"
+    exit 1
+fi
+
+# Verify on main and porcelain clean
+CURRENT_BRANCH=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)
+if [[ "$CURRENT_BRANCH" != "main" ]]; then
+    echo "Error: must be on main branch (current: $CURRENT_BRANCH)"
+    exit 1
+fi
+
+if [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]]; then
+    echo "Error: working tree is not clean"
+    git -C "$REPO_ROOT" status --short
+    exit 1
+fi
+
+# Build and bump lovelace card
+"$REPO_ROOT/scripts/deploy.sh"
+
+# Update manifest.json version
+jq --arg v "$VERSION_TAG" '.version = $v' "$MANIFEST" | sponge "$MANIFEST"
+
+# Commit (manifest bump + card build artifacts from deploy.sh:
+# www/ bundle, card/package.json, card/src/index.ts). The tree was verified
+# clean above, so everything dirty now comes from this release.
+git -C "$REPO_ROOT" add -A
+git -C "$REPO_ROOT" commit -m "release $VERSION_TAG"
+
+# Tag
+git -C "$REPO_ROOT" tag "$VERSION_TAG"
+
+# Push code and tags
+git -C "$REPO_ROOT" push origin main
+git -C "$REPO_ROOT" push origin "$VERSION_TAG"
+
+echo "Released $VERSION_TAG"

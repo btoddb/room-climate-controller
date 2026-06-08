@@ -14,11 +14,15 @@
     "customizations": {
         "vscode": {
             "extensions": [
+                "anthropic.claude-code",
                 "charliermarsh.ruff",
                 "github.vscode-pull-request-github",
+                "ms-azuretools.vscode-containers",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
-                "ryanluker.vscode-coverage-gutters"
+                "ryanluker.vscode-coverage-gutters",
+                "streetsidesoftware.code-spell-checker",
+                "redhat.vscode-yaml"
             ],
             "settings": {
                 "files.eol": "\n",
@@ -41,12 +45,15 @@
             "version": "20"
         },
         "ghcr.io/devcontainers/features/python:1": {
+            // minimum for room-climate-controller is 3.13, but using 3.14 for development
             "version": "3.14"
         },
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
-            "packages": "ffmpeg,libturbojpeg0,libpcap-dev,moreutils"
+            // moreutils provides sponge
+            "packages": "ffmpeg,libturbojpeg0,libpcap-dev,moreutils,git-delta"
         },
         "ghcr.io/devcontainers/features/common-utils:2": {
+            // common-utils provides base commands (curl, net-tools, jq, unzip, etc)
             "installZsh": "true",
             "configureZshAsDefaultShell": "true"
         }

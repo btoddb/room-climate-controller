@@ -1,4 +1,5 @@
-"""Runtime root object for a Room Climate config entry.
+"""
+Runtime root object for a Room Climate config entry.
 
 Holds the live rooms (built from config subentries), the profiles (loaded from
 storage), the per-room reactive controllers, and the profile scheduler. Stored on
@@ -8,7 +9,7 @@ services.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -66,9 +67,7 @@ class RoomClimateHub:
 
     def room_by_subentry(self, subentry_id: str) -> Room | None:
         """Return the room backed by the given subentry id, if any."""
-        return next(
-            (r for r in self.rooms.values() if r.room_id == subentry_id), None
-        )
+        return next((r for r in self.rooms.values() if r.room_id == subentry_id), None)
 
     def get_profile(self, profile_id: str) -> Profile | None:
         """Return the profile with the given id, if any."""

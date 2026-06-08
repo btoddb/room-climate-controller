@@ -1,4 +1,5 @@
-"""Sensor platform: per-room temperature/humidity/power mirrors + outdoor temp.
+"""
+Sensor platform: per-room temperature/humidity/power mirrors + outdoor temp.
 
 These wrap the user-configured source sensors so the rest of the system (and
 dashboards) reference a stable ``sensor.<room>_room_*`` entity even if the
@@ -130,7 +131,7 @@ class _MirrorSensor(SensorEntity):
         self._attr_available = True
         try:
             self._attr_native_value = float(state.state)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             self._attr_native_value = state.state
         self._attr_native_unit_of_measurement = state.attributes.get(
             "unit_of_measurement"

@@ -1,4 +1,5 @@
-"""Select platform: the hub's graph time-range helper.
+"""
+Select platform: the hub's graph time-range helper.
 
 The dashboard card's energy/history graphs read this entity's state as the number
 of hours to show. The integration owns it so a fresh install has a working

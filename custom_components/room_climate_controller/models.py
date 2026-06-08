@@ -1,4 +1,5 @@
-"""Data models and shared helpers for Room Climate.
+"""
+Data models and shared helpers for Room Climate.
 
 Pure logic (no Home Assistant imports) so it can be unit-tested and reused across
 the config flow, websocket API, scheduler, and entity platforms.
@@ -6,9 +7,9 @@ the config flow, websocket API, scheduler, and entity platforms.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
-import re
 from typing import Any
 
 from .const import (
@@ -121,19 +122,19 @@ class Room:
     power_on_delay: float
 
     @classmethod
-    def from_subentry(cls, subentry_id: str, data: Mapping[str, Any]) -> "Room":
+    def from_subentry(cls, subentry_id: str, data: Mapping[str, Any]) -> Room:
         """Build a Room from a config subentry's stored data."""
         limits = {
             device: {
                 "min": float(
-                    data.get(CONF_LIMITS, {}).get(device, {}).get(
-                        "min", DEFAULT_LIMITS[device]["min"]
-                    )
+                    data.get(CONF_LIMITS, {})
+                    .get(device, {})
+                    .get("min", DEFAULT_LIMITS[device]["min"])
                 ),
                 "max": float(
-                    data.get(CONF_LIMITS, {}).get(device, {}).get(
-                        "max", DEFAULT_LIMITS[device]["max"]
-                    )
+                    data.get(CONF_LIMITS, {})
+                    .get(device, {})
+                    .get("max", DEFAULT_LIMITS[device]["max"])
                 ),
             }
             for device in DEVICE_TYPES
@@ -205,7 +206,7 @@ class Profile:
     presets: dict[str, DevicePreset] = field(default_factory=dict)
 
     @classmethod
-    def with_defaults(cls, *, id: str, name: str, room: "Room") -> "Profile":
+    def with_defaults(cls, *, id: str, name: str, room: Room) -> Profile:
         """Create a profile with preset defaults (uses off, temps at room min)."""
         return cls(
             id=format_profile_id(id),
@@ -234,7 +235,7 @@ class Profile:
         }
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "Profile":
+    def from_dict(cls, data: Mapping[str, Any]) -> Profile:
         """Deserialize from storage."""
         return cls(
             id=format_profile_id(data["id"]),
@@ -253,7 +254,7 @@ class Profile:
             },
         )
 
-    def reassigned_to(self, room: "Room") -> "Profile":
+    def reassigned_to(self, room: Room) -> Profile:
         """Return a copy moved to ``room``, re-seeding presets for its devices."""
         presets = {
             device: self.presets.get(

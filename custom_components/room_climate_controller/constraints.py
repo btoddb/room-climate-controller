@@ -1,4 +1,5 @@
-"""Advisory clamping of a room's targets/offsets.
+"""
+Advisory clamping of a room's targets/offsets.
 
 Watches a room's target and offset numbers; when an invalid combination is set
 (heating ≥ cooling, an offset out of order, or an offset past a device limit) it
@@ -56,7 +57,7 @@ class ConstraintsValidator:
         """Subscribe to the room's target/offset numbers."""
         self._resubscribe()
         self.entry.async_on_unload(
-            async_call_later(self.hass, 3, lambda _now: self._resubscribe())
+            async_call_later(self.hass, 3, callback(lambda _now: self._resubscribe()))
         )
         self.entry.async_on_unload(self.async_stop)
 
@@ -108,7 +109,7 @@ class ConstraintsValidator:
             if new_state is not None:
                 try:
                     value = float(new_state.state)
-                except (TypeError, ValueError):
+                except TypeError, ValueError:
                     value = None
             if value is not None and value in pending:
                 pending.remove(value)
@@ -215,7 +216,7 @@ class ConstraintsValidator:
             return None
         try:
             return float(state.state)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
 
     async def _clamp(self, key: str, value: float, reason: str) -> None:
@@ -226,7 +227,9 @@ class ConstraintsValidator:
         # leave a stale suppression entry (no state_changed would echo).
         if (current := self._num(key)) is not None and current == value:
             return
-        _LOGGER.debug("Room %s: clamping %s to %s (%s)", self.room.key, eid, value, reason)
+        _LOGGER.debug(
+            "Room %s: clamping %s to %s (%s)", self.room.key, eid, value, reason
+        )
         # Record the write so its echoed state_changed is ignored in _on_change.
         self._pending.setdefault(eid, []).append(float(value))
         await self.hass.services.async_call(

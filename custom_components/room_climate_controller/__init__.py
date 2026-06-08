@@ -4,23 +4,28 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.typing import ConfigType
 
 from . import websocket_api
 from .apply import async_apply_profile
-from .constraints import ConstraintsValidator
 from .const import DOMAIN, KEY_MANUAL_MODE, PLATFORMS
+from .constraints import ConstraintsValidator
 from .controller import RoomController
-from .entity import async_assign_areas, resolve_room_entity
+from .entity import (
+    async_assign_areas,
+    async_migrate_profile_subentries,
+    resolve_room_entity,
+)
 from .hub import RoomClimateConfigEntry, RoomClimateHub
 from .models import format_profile_id
 from .scheduler import ProfileScheduler
@@ -133,12 +138,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: RoomClimateConfigEntry) 
     hub.scheduler = ProfileScheduler(hass, entry)
     hub.scheduler.async_start()
 
-    # Drop each room/profile device into its room's area. Devices register a
-    # moment after the platforms set up, so re-run once on a short delay too.
-    async_assign_areas(hass, entry)
-    entry.async_on_unload(
-        async_call_later(hass, 5, lambda _now: async_assign_areas(hass, entry))
-    )
+    # Drop each room/profile device into its room's area, and move legacy profile
+    # devices under their room's subentry. Devices register a moment after the
+    # platforms set up, so re-run once on a short delay too. Must be a @callback
+    # so the delayed pass runs on the event loop (loop-only registry writes).
+    @callback
+    def _device_housekeeping(_now: Any = None) -> None:
+        async_assign_areas(hass, entry)
+        async_migrate_profile_subentries(hass, entry)
+
+    _device_housekeeping()
+    entry.async_on_unload(async_call_later(hass, 5, _device_housekeeping))
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True

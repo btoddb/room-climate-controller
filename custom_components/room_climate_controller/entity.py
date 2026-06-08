@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
@@ -66,7 +67,8 @@ def profile_device_info(entry: ConfigEntry, profile: Profile) -> DeviceInfo:
 
 @callback
 def async_assign_areas(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Place each room's device — and its profiles' devices — in the room's area.
+    """
+    Place each room's device — and its profiles' devices — in the room's area.
 
     Only fills a device with no area yet, so a manual move in the UI is preserved.
     Devices register a moment after platform setup, so callers also schedule a
@@ -94,8 +96,42 @@ def async_assign_areas(hass: HomeAssistant, entry: ConfigEntry) -> None:
             _assign(f"profile_{profile.id}", room.area_id)
 
 
+@callback
+def async_migrate_profile_subentries(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """
+    Drop the legacy "no subentry" link from profile devices.
+
+    Profiles used to register without a config subentry; they now belong to their
+    room's subentry. Devices created before that change keep both links and so
+    appear twice in the UI — remove the stale ``None`` membership once the room
+    link is present. Devices register a moment after setup, so callers also
+    schedule a delayed pass.
+    """
+    hub = getattr(entry, "runtime_data", None)
+    if hub is None:
+        return
+    dev_reg = dr.async_get(hass)
+    for profile in hub.profiles:
+        room = hub.room_by_key(profile.room)
+        if room is None:
+            continue
+        device = dev_reg.async_get_device(
+            identifiers={(DOMAIN, f"{entry.entry_id}_profile_{profile.id}")}
+        )
+        if device is None:
+            continue
+        subentries = device.config_entries_subentries.get(entry.entry_id, set())
+        if None in subentries and room.room_id in subentries:
+            dev_reg.async_update_device(
+                device.id,
+                remove_config_entry_id=entry.entry_id,
+                remove_config_subentry_id=None,
+            )
+
+
 class ProfileRemovalMixin:
-    """Removes a profile entity when its profile is deleted via dispatcher.
+    """
+    Removes a profile entity when its profile is deleted via dispatcher.
 
     Classes set ``self._profile_id`` and call ``_connect_profile_removal()``
     from their own ``async_added_to_hass``.

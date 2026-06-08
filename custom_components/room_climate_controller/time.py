@@ -26,7 +26,12 @@ async def async_setup_entry(
 
     @callback
     def _add_profile(profile: Profile) -> None:
-        async_add_entities([ProfileTime(entry, profile)])
+        room = hub.room_by_key(profile.room)
+        if room is None:
+            return
+        async_add_entities(
+            [ProfileTime(entry, profile)], config_subentry_id=room.room_id
+        )
 
     for profile in hub.profiles:
         _add_profile(profile)
@@ -57,9 +62,7 @@ class ProfileTime(ProfileRemovalMixin, TimeEntity, RestoreEntity):
         """Initialize the time entity."""
         self._entry = entry
         self._profile_id = profile.id
-        self._attr_unique_id = profile_uid(
-            entry.entry_id, profile.id, KEY_PROFILE_TIME
-        )
+        self._attr_unique_id = profile_uid(entry.entry_id, profile.id, KEY_PROFILE_TIME)
         self._attr_name = "Schedule time"
         self._attr_device_info = profile_device_info(entry, profile)
         self._attr_native_value = _parse_hhmm(profile.time)

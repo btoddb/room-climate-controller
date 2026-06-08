@@ -98,7 +98,7 @@ async def async_setup_entry(
             entities.append(ProfileUseSwitch(entry, profile, device))
         if room.has_ac and room.ac_fan_only:
             entities.append(ProfileFanOverrideSwitch(entry, profile))
-        async_add_entities(entities)
+        async_add_entities(entities, config_subentry_id=room.room_id)
 
     for profile in hub.profiles:
         _add_profile(profile)

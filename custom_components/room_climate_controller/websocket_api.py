@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import voluptuous as vol
-
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_ON
@@ -298,7 +295,7 @@ async def ws_create_profile(
     if hub.scheduler:
         hub.scheduler.async_refresh()
     # Place the new profile's device in its room's area once its entities register.
-    async_call_later(hass, 5, lambda _now: async_assign_areas(hass, entry))
+    async_call_later(hass, 5, callback(lambda _now: async_assign_areas(hass, entry)))
     connection.send_result(
         msg["id"], {"profile": _serialize_profile(hass, entry, profile)}
     )

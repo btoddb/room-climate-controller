@@ -102,11 +102,10 @@ async def async_setup_entry(
         if room is None:
             return
         entities = [
-            ProfilePresetNumber(entry, profile, room, device)
-            for device in room.devices
+            ProfilePresetNumber(entry, profile, room, device) for device in room.devices
         ]
         if entities:
-            async_add_entities(entities)
+            async_add_entities(entities, config_subentry_id=room.room_id)
 
     for profile in hub.profiles:
         _add_profile(profile)

@@ -35,16 +35,6 @@ export function formatPowerNow(hass: HomeAssistant, entityId?: string): string {
   return Number.isNaN(watts) ? "—" : `${watts} W now`;
 }
 
-/** Climate can run fan-only circulation (fan_only mode or fan_modes present). */
-export function supportsFanOnly(hass: HomeAssistant, entityId?: string): boolean {
-  if (!entityConfigured(entityId) || !hass.states[entityId!]) return false;
-  const state = hass.states[entityId!];
-  const modes = state.attributes.hvac_modes as string[] | undefined;
-  if (Array.isArray(modes) && modes.includes("fan_only")) return true;
-  const fanModes = state.attributes.fan_modes as string[] | undefined;
-  return Array.isArray(fanModes) && fanModes.length > 0;
-}
-
 export function getHvacMode(hass: HomeAssistant, entityId: string): string {
   const state = hass.states[entityId];
   if (!state) return "—";

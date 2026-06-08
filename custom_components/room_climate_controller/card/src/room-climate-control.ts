@@ -25,7 +25,6 @@ import {
   getHvacMode,
   getStateObj,
   getTargetTemp,
-  supportsFanOnly,
 } from "./helpers";
 import { cardStyles } from "./styles";
 import { getRoomsSync, refreshProfiles, subscribeProfiles } from "./profiles/store";
@@ -241,8 +240,11 @@ export class RoomClimateControl extends LitElement {
       const entity = deviceEntity!;
       const targetTemp = getTargetTemp(this.hass, targetHelper);
       const mode = modeFn(this.hass, entity);
-      const showFanOvrCol =
-        entityConfigured(fanOnlyOverrideToggle) && supportsFanOnly(this.hass, entity);
+      // Trust the backend: it only exposes the fan-only override entity when the
+      // room is configured with `has_ac && ac_fan_only`. Don't re-gate on the
+      // climate entity advertising `fan_only`, since portable ACs deliver
+      // fan-only circulation through a separate fan entity + power switch.
+      const showFanOvrCol = entityConfigured(fanOnlyOverrideToggle);
       const fanOvrState = showFanOvrCol
         ? getStateObj(this.hass, fanOnlyOverrideToggle!)
         : undefined;

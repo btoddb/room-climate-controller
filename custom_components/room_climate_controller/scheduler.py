@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.event import (
@@ -37,7 +37,7 @@ class ProfileScheduler:
         """Schedule all profiles and watch their enabled/time entities."""
         self.async_refresh()
         self.entry.async_on_unload(
-            async_call_later(self.hass, 3, lambda _now: self.async_refresh())
+            async_call_later(self.hass, 3, callback(lambda _now: self.async_refresh()))
         )
         self.entry.async_on_unload(self.async_stop)
 

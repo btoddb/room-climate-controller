@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
+from typing import TYPE_CHECKING
+
 from homeassistant.core import HomeAssistant, callback
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -39,7 +43,7 @@ def resolve_hub_entity(
 
 
 def hub_identifier(entry_id: str) -> tuple[str, str]:
-    """Identifier tuple for the hub service device."""
+    """Return the identifier tuple for the hub service device."""
     return (DOMAIN, entry_id)
 
 

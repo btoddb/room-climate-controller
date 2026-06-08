@@ -92,25 +92,28 @@ class EngineInputs:
     target_fan: float
     fan_medium: float
     fan_high: float
-    # timing (milliseconds)
     command_delay_ms: int
     power_on_delay_ms: int
 
     # derived helpers ----------------------------------------------------
     @property
     def has_ac(self) -> bool:
+        """Return True when an AC climate entity is configured."""
         return self.ac is not None
 
     @property
     def has_heater(self) -> bool:
+        """Return True when a heater climate entity is configured."""
         return self.heater is not None
 
     @property
     def has_fan(self) -> bool:
+        """Return True when a standalone fan entity is configured."""
         return self.fan is not None
 
     @property
     def ac_setpoint_int(self) -> int:
+        """Return the AC climate setpoint (device min or 65 °F floor)."""
         # The engine controls comfort via fan speed, so the climate's own target
         # is driven to its lowest settable value (max cooling), or 65 °F when the
         # device doesn't report a min_temp.
@@ -119,10 +122,12 @@ class EngineInputs:
 
     @property
     def target_heating_int(self) -> int:
+        """Return the heating target rounded to the nearest integer."""
         return round(self.target_heating)
 
     @property
     def fan_needs_on(self) -> bool:
+        """Return True when the standalone fan should run."""
         return self.use_fan and self.room_temp > self.target_fan
 
 
@@ -136,22 +141,30 @@ class Command:
 
 @dataclass(frozen=True)
 class Delay(Command):
+    """Pause between commands (milliseconds)."""
+
     ms: int
 
 
 @dataclass(frozen=True)
 class SetHvacMode(Command):
+    """Set the HVAC mode on a climate entity."""
+
     entity_id: str
     hvac_mode: str
 
 
 @dataclass(frozen=True)
 class TurnOffClimate(Command):
+    """Turn off a climate entity."""
+
     entity_id: str
 
 
 @dataclass(frozen=True)
 class SetTemperature(Command):
+    """Set the target temperature on a climate entity."""
+
     entity_id: str
     temperature: int
     hvac_mode: str
@@ -159,39 +172,53 @@ class SetTemperature(Command):
 
 @dataclass(frozen=True)
 class SetFanMode(Command):
+    """Set the fan mode on a climate entity."""
+
     entity_id: str
     fan_mode: str
 
 
 @dataclass(frozen=True)
 class FanTurnOn(Command):
+    """Turn on a fan entity."""
+
     entity_id: str
 
 
 @dataclass(frozen=True)
 class FanTurnOff(Command):
+    """Turn off a fan entity."""
+
     entity_id: str
 
 
 @dataclass(frozen=True)
 class FanSetPreset(Command):
+    """Set the preset mode on a fan entity."""
+
     entity_id: str
     preset_mode: str
 
 
 @dataclass(frozen=True)
 class FanSetPercentage(Command):
+    """Set the speed percentage on a fan entity."""
+
     entity_id: str
     percentage: int
 
 
 @dataclass(frozen=True)
 class SwitchTurnOn(Command):
+    """Turn on a switch entity."""
+
     entity_id: str
 
 
 @dataclass(frozen=True)
 class SwitchTurnOff(Command):
+    """Turn off a switch entity."""
+
     entity_id: str
 
 
@@ -210,8 +237,9 @@ class _Out:
 # ---------------------------------------------------------------------------
 def compute_commands(inp: EngineInputs) -> list[Command]:
     """
-    Return the ordered commands for the current state (manual-mode gating is
-    the controller's job; this assumes control is active).
+    Return the ordered commands for the current state.
+
+    Manual-mode gating is the controller's job; this assumes control is active.
     """
     out = _Out()
     if inp.combined and inp.ac is not None:
@@ -229,7 +257,7 @@ def compute_commands(inp: EngineInputs) -> list[Command]:
 # ---------------------------------------------------------------------------
 # Combined heat-pump branch
 # ---------------------------------------------------------------------------
-def _combined(inp: EngineInputs, out: _Out) -> None:
+def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
     ac = inp.ac
     assert ac is not None
     needs_cool = inp.use_ac and inp.room_temp > inp.target_cooling
@@ -269,7 +297,7 @@ def _combined(inp: EngineInputs, out: _Out) -> None:
 
     if inp.ac_power and decision in (COOL, HEAT, FAN_ONLY) and not inp.ac_power.is_on:
         out.add(SwitchTurnOn(inp.ac_power.entity_id), Delay(inp.power_on_delay_ms))
-    if decision != OFF and current != decision:
+    if decision not in {OFF, current}:
         out.add(SetHvacMode(ac.entity_id, decision), Delay(inp.command_delay_ms))
     if decision == OFF and current not in _OFF_LIKE:
         out.add(
@@ -290,7 +318,7 @@ def _combined(inp: EngineInputs, out: _Out) -> None:
             out.add(SetFanMode(ac.entity_id, matched))
 
 
-def _combined_speed_label(inp: EngineInputs, decision: str) -> str:
+def _combined_speed_label(inp: EngineInputs, decision: str) -> str:  # noqa: PLR0911
     """Pick cooling vs heating tiers for the combined climate fan."""
     if decision == HEAT:
         return heating_speed(inp.room_temp, inp.heating_medium, inp.heating_high)[0]
@@ -327,7 +355,7 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
 
     if inp.ac_power and decision in (COOL, FAN_ONLY) and not inp.ac_power.is_on:
         out.add(SwitchTurnOn(inp.ac_power.entity_id), Delay(inp.power_on_delay_ms))
-    if decision != OFF and current != decision:
+    if decision not in {OFF, current}:
         out.add(SetHvacMode(ac.entity_id, decision), Delay(inp.command_delay_ms))
     if decision == OFF:
         out.add(
@@ -381,7 +409,7 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
 
     if inp.heater_power and decision in (HEAT, FAN_ONLY) and not inp.heater_power.is_on:
         out.add(SwitchTurnOn(inp.heater_power.entity_id), Delay(inp.power_on_delay_ms))
-    if decision != OFF and current != decision:
+    if decision not in {OFF, current}:
         out.add(SetHvacMode(heater.entity_id, decision), Delay(inp.command_delay_ms))
     if decision == OFF and current != OFF:
         out.add(SetHvacMode(heater.entity_id, OFF), Delay(inp.command_delay_ms))
@@ -410,10 +438,10 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
         out.add(SetHvacMode(heater.entity_id, OFF))
 
 
-def _emit_climate_fan(
+def _emit_climate_fan(  # noqa: PLR0913
     out: _Out,
     climate: ClimateInfo,
-    has_fan_modes: bool,
+    has_fan_modes: bool,  # noqa: FBT001
     matched: str,
     companion: FanInfo | None,
     label: str,

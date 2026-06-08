@@ -7,7 +7,10 @@ Ports the 3-tier speed selection and the device ``fan_mode`` matching from
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # Speed tiers as (label, percentage).
 LOW = ("low", 10)
@@ -31,7 +34,7 @@ def cooling_speed(room_temp: float, medium: float, high: float) -> tuple[str, in
 
 
 def heating_speed(room_temp: float, medium: float, high: float) -> tuple[str, int]:
-    """Colder rooms heat harder: ``medium``/``high`` are target-offset (high < medium)."""
+    """Heat harder as temp drops: offsets from target where high < medium."""
     if room_temp <= high:
         return HIGH
     if room_temp <= medium:

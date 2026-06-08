@@ -78,7 +78,7 @@ class RoomClimateConfigFlow(ConfigFlow, domain=DOMAIN):
     @classmethod
     @callback
     def async_get_supported_subentry_types(
-        cls, config_entry: Any
+        cls, _config_entry: Any
     ) -> dict[str, type[ConfigSubentryFlow]]:
         """Rooms are added as subentries of the hub."""
         return {SUBENTRY_TYPE_ROOM: RoomSubentryFlowHandler}
@@ -181,6 +181,7 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
     async def async_step_devices(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
+        """Step 2: assign device entities (climate, fan, power switch)."""
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_sensors()
@@ -216,6 +217,7 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
     async def async_step_sensors(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
+        """Step 3: pick sensors, temperature limits, and timing delays."""
         if user_input is not None:
             limits: dict[str, dict[str, float]] = {}
             for device, lo, hi in (
@@ -290,7 +292,7 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
         }.get(device, False)
 
     def _key_taken(self, key: str) -> bool:
-        """True if another room subentry already uses this key."""
+        """Return True if another room subentry already uses this key."""
         current_id = (
             self._get_reconfigure_subentry().subentry_id
             if self._is_reconfigure

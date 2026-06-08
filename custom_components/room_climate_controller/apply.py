@@ -8,13 +8,16 @@ This only writes the room's live ``number``/``switch`` entities; the room's
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_ON
 
 from .const import KEY_AC_FAN_ONLY, KEY_MANUAL_MODE, KEY_TARGET, KEY_USE
 from .entity import resolve_room_entity
-from .hub import RoomClimateConfigEntry
-from .models import Profile
+
+if TYPE_CHECKING:
+    from .hub import RoomClimateConfigEntry
+    from .models import Profile
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,13 +69,18 @@ async def async_apply_profile(
                 blocking=True,
             )
 
-    if room.has_ac and room.ac_fan_only:
-        if ov_eid := resolve_room_entity(
-            hass, entry.entry_id, room.key, KEY_AC_FAN_ONLY, "switch"
-        ):
-            await hass.services.async_call(
-                "switch",
-                "turn_on" if profile.fan_override else "turn_off",
-                {"entity_id": ov_eid},
-                blocking=True,
+    if (
+        room.has_ac
+        and room.ac_fan_only
+        and (
+            ov_eid := resolve_room_entity(
+                hass, entry.entry_id, room.key, KEY_AC_FAN_ONLY, "switch"
             )
+        )
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_on" if profile.fan_override else "turn_off",
+            {"entity_id": ov_eid},
+            blocking=True,
+        )

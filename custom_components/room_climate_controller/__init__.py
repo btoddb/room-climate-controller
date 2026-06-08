@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.components.frontend import add_extra_js_url
@@ -14,7 +14,9 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_call_later
-from homeassistant.helpers.typing import ConfigType
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.typing import ConfigType
 
 from . import websocket_api
 from .apply import async_apply_profile
@@ -38,7 +40,7 @@ SERVICE_APPLY_PROFILE = "apply_profile"
 SERVICE_SET_MANUAL_MODE = "set_manual_mode"
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Register websocket commands and services (once)."""
     await hass.http.async_register_static_paths(
         [

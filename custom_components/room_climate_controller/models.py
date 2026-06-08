@@ -8,9 +8,11 @@ the config flow, websocket API, scheduler, and entity platforms.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
 
 from .const import (
     CONF_AC_CLIMATE,
@@ -46,6 +48,8 @@ from .const import (
 )
 
 _TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})(?::\d{2})?$")
+_MAX_HOUR = 23
+_MAX_MINUTE = 59
 
 
 # ---------------------------------------------------------------------------
@@ -56,10 +60,12 @@ def normalize_time_hhmm(value: str) -> str:
     raw = str(value).strip()
     m = _TIME_RE.match(raw)
     if not m:
-        raise ValueError(f"Invalid time {value!r}; use HH:MM (24-hour)")
+        msg = f"Invalid time {value!r}; use HH:MM (24-hour)"
+        raise ValueError(msg)
     hour, minute = int(m.group(1)), int(m.group(2))
-    if hour > 23 or minute > 59:
-        raise ValueError(f"Invalid time {value!r}")
+    if hour > _MAX_HOUR or minute > _MAX_MINUTE:
+        msg = f"Invalid time {value!r}"
+        raise ValueError(msg)
     return f"{hour:02d}:{minute:02d}"
 
 
@@ -81,10 +87,7 @@ def next_profile_id(existing_ids: Iterable[str]) -> str:
     """Return the next 2-digit numeric id not already used."""
     ids = {format_profile_id(pid) for pid in existing_ids}
     numeric = [int(pid) for pid in ids if pid.isdigit()]
-    if numeric:
-        candidate = max(numeric) + 1
-    else:
-        candidate = 1
+    candidate = max(numeric) + 1 if numeric else 1
     while f"{candidate:02d}" in ids:
         candidate += 1
     return f"{candidate:02d}"
@@ -206,10 +209,10 @@ class Profile:
     presets: dict[str, DevicePreset] = field(default_factory=dict)
 
     @classmethod
-    def with_defaults(cls, *, id: str, name: str, room: Room) -> Profile:
+    def with_defaults(cls, *, profile_id: str, name: str, room: Room) -> Profile:
         """Create a profile with preset defaults (uses off, temps at room min)."""
         return cls(
-            id=format_profile_id(id),
+            id=format_profile_id(profile_id),
             name=name.strip(),
             room=room.key,
             presets={
@@ -269,12 +272,12 @@ class Profile:
 # Deterministic unique_id builders (used by platforms + controller/scheduler)
 # ---------------------------------------------------------------------------
 def room_uid(entry_id: str, room_key: str, key: str) -> str:
-    """Unique id for a per-room entity."""
+    """Build the unique id for a per-room entity."""
     return f"{entry_id}_room_{room_key}_{key}"
 
 
 def profile_uid(entry_id: str, profile_id: str, key: str) -> str:
-    """Unique id for a per-profile entity."""
+    """Build the unique id for a per-profile entity."""
     return f"{entry_id}_profile_{profile_id}_{key}"
 
 

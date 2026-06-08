@@ -9,6 +9,7 @@ clamps the value and raises a persistent notification — non-blocking.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from homeassistant.components import persistent_notification
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
@@ -27,8 +28,10 @@ from .const import (
     OFFSET_MAX,
     OFFSET_MIN,
 )
-from .hub import RoomClimateConfigEntry
 from .models import Room, room_uid
+
+if TYPE_CHECKING:
+    from .hub import RoomClimateConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 _INVALID = (None, "", STATE_UNKNOWN, STATE_UNAVAILABLE)

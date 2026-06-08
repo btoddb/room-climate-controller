@@ -11,6 +11,7 @@ can re-point the real weather sensor in one place.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -20,7 +21,6 @@ from homeassistant.components.sensor import (
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import (
@@ -31,8 +31,12 @@ from .const import (
     KEY_ROOM_TEMPERATURE,
 )
 from .entity import hub_identifier, room_device_info
-from .hub import RoomClimateConfigEntry
 from .models import Room, room_uid
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .hub import RoomClimateConfigEntry
 
 
 @dataclass(frozen=True)
@@ -80,7 +84,7 @@ def _room_specs(room: Room) -> list[_SensorSpec]:
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     entry: RoomClimateConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
@@ -118,7 +122,7 @@ class _MirrorSensor(SensorEntity):
         self._update_from_source()
 
     @callback
-    def _handle_source(self, event: Event[EventStateChangedData]) -> None:
+    def _handle_source(self, _event: Event[EventStateChangedData]) -> None:
         self._update_from_source()
         self.async_write_ha_state()
 
@@ -131,7 +135,7 @@ class _MirrorSensor(SensorEntity):
         self._attr_available = True
         try:
             self._attr_native_value = float(state.state)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             self._attr_native_value = state.state
         self._attr_native_unit_of_measurement = state.attributes.get(
             "unit_of_measurement"

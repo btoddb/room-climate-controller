@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
@@ -39,15 +40,17 @@ from .engine import (
     TurnOffClimate,
     compute_commands,
 )
-from .hub import RoomClimateConfigEntry
 from .models import Room, room_uid
+
+if TYPE_CHECKING:
+    from .hub import RoomClimateConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
 _INVALID = (None, "", STATE_UNKNOWN, STATE_UNAVAILABLE, "none")
 
 
-def _service_for(cmd: Command) -> tuple[str, str, dict]:
+def _service_for(cmd: Command) -> tuple[str, str, dict]:  # noqa: PLR0911
     """Map a command to a (domain, service, data) service call."""
     if isinstance(cmd, SetHvacMode):
         return (
@@ -105,7 +108,8 @@ def _service_for(cmd: Command) -> tuple[str, str, dict]:
         return "switch", "turn_on", {"entity_id": cmd.entity_id}
     if isinstance(cmd, SwitchTurnOff):
         return "switch", "turn_off", {"entity_id": cmd.entity_id}
-    raise ValueError(f"Unknown command {cmd!r}")
+    msg = f"Unknown command {cmd!r}"
+    raise ValueError(msg)
 
 
 class RoomController:
@@ -144,7 +148,7 @@ class RoomController:
             self._unsub_state = None
 
     @callback
-    def _delayed_resubscribe(self, _now) -> None:
+    def _delayed_resubscribe(self, _now: object) -> None:
         self._resubscribe()
         self.async_request_run()
 
@@ -184,7 +188,7 @@ class RoomController:
         return frozenset(ids)
 
     @callback
-    def _on_change(self, event: Event[EventStateChangedData]) -> None:
+    def _on_change(self, _event: Event[EventStateChangedData]) -> None:
         self._resubscribe()
         self.async_request_run()
 
@@ -285,7 +289,7 @@ class RoomController:
             return None
         try:
             return float(state.state)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
 
     def _number(self, key: str, default: float) -> float:
@@ -293,7 +297,7 @@ class RoomController:
         if eid and (state := self.hass.states.get(eid)) and state.state not in _INVALID:
             try:
                 return float(state.state)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 return default
         return default
 

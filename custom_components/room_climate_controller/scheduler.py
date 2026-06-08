@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.event import (
@@ -15,8 +15,12 @@ from homeassistant.helpers.event import (
 from .apply import async_apply_profile
 from .const import KEY_PROFILE_ENABLED, KEY_PROFILE_TIME
 from .entity import resolve_profile_entity
-from .hub import RoomClimateConfigEntry
 from .models import normalize_time_hhmm
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from .hub import RoomClimateConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,7 +83,7 @@ class ProfileScheduler:
 
     def _make_fire(self, profile_id: str) -> Callable:
         @callback
-        def _fire(_now) -> None:
+        def _fire(_now: object) -> None:
             profile = self.entry.runtime_data.get_profile(profile_id)
             if profile is None or not profile.enabled:
                 return
@@ -115,5 +119,5 @@ class ProfileScheduler:
             )
 
     @callback
-    def _on_entity_change(self, event: Event[EventStateChangedData]) -> None:
+    def _on_entity_change(self, _event: Event[EventStateChangedData]) -> None:
         self._reschedule()

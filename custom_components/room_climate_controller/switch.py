@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
@@ -23,8 +22,12 @@ from .const import (
     SIGNAL_ADD_PROFILE_ENTITIES,
 )
 from .entity import ProfileRemovalMixin, profile_device_info, room_device_info
-from .hub import RoomClimateConfigEntry
 from .models import Profile, Room, profile_uid, room_uid
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .hub import RoomClimateConfigEntry
 
 
 @dataclass(frozen=True)
@@ -36,19 +39,18 @@ class _SwitchSpec:
 
 
 def _room_specs(room: Room) -> list[_SwitchSpec]:
-    specs: list[_SwitchSpec] = []
-    for device in room.devices:
-        specs.append(
-            _SwitchSpec(
-                key=KEY_USE[device],
-                name={
-                    "cooling": "Use A/C",
-                    "heating": "Use heater",
-                    "fan": "Use fan",
-                }[device],
-                icon=DEVICE_USE_ICONS[device],
-            )
+    specs: list[_SwitchSpec] = [
+        _SwitchSpec(
+            key=KEY_USE[device],
+            name={
+                "cooling": "Use A/C",
+                "heating": "Use heater",
+                "fan": "Use fan",
+            }[device],
+            icon=DEVICE_USE_ICONS[device],
         )
+        for device in room.devices
+    ]
     specs.append(
         _SwitchSpec(
             key=KEY_MANUAL_MODE,
@@ -93,9 +95,10 @@ async def async_setup_entry(
         room = hub.room_by_key(profile.room)
         if room is None:
             return
-        entities: list[SwitchEntity] = [ProfileEnabledSwitch(entry, profile)]
-        for device in room.devices:
-            entities.append(ProfileUseSwitch(entry, profile, device))
+        entities: list[SwitchEntity] = [
+            ProfileEnabledSwitch(entry, profile),
+            *(ProfileUseSwitch(entry, profile, device) for device in room.devices),
+        ]
         if room.has_ac and room.ac_fan_only:
             entities.append(ProfileFanOverrideSwitch(entry, profile))
         async_add_entities(entities, config_subentry_id=room.room_id)
@@ -121,13 +124,13 @@ class _BaseRestoreSwitch(SwitchEntity, RestoreEntity):
         elif self._attr_is_on is None:
             self._attr_is_on = False
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
+    async def async_turn_on(self, **_kwargs: Any) -> None:
         """Turn on."""
         self._attr_is_on = True
         self.async_write_ha_state()
         self._on_change()
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
+    async def async_turn_off(self, **_kwargs: Any) -> None:
         """Turn off."""
         self._attr_is_on = False
         self.async_write_ha_state()
@@ -135,7 +138,7 @@ class _BaseRestoreSwitch(SwitchEntity, RestoreEntity):
 
     @callback
     def _on_change(self) -> None:
-        """Hook for subclasses to persist state."""
+        """Override in subclasses to persist state after a toggle."""
 
 
 class RoomSwitch(_BaseRestoreSwitch):
@@ -169,7 +172,7 @@ class _BaseProfileSwitch(ProfileRemovalMixin, _BaseRestoreSwitch):
 
     @callback
     def _apply_to_profile(self, profile: Profile) -> None:
-        """Subclasses write self._attr_is_on into the profile."""
+        """Write self._attr_is_on into the profile; override in subclasses."""
 
     @callback
     def _on_change(self) -> None:

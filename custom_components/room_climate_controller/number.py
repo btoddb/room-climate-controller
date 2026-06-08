@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from homeassistant.components.number import NumberMode, RestoreNumber
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
     DEFAULT_HIGH_OFFSET,
@@ -23,8 +23,12 @@ from .const import (
     TEMP_UNIT,
 )
 from .entity import ProfileRemovalMixin, profile_device_info, room_device_info
-from .hub import RoomClimateConfigEntry
 from .models import Profile, Room, profile_uid, room_uid
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .hub import RoomClimateConfigEntry
 
 
 @dataclass(frozen=True)

@@ -8,10 +8,10 @@ time-range selector without the user creating an ``input_select`` helper.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from homeassistant.components.select import SelectEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
@@ -20,11 +20,16 @@ from .const import (
     KEY_GRAPH_TIME_RANGE,
 )
 from .entity import hub_identifier
-from .hub import RoomClimateConfigEntry
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .hub import RoomClimateConfigEntry
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     entry: RoomClimateConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:

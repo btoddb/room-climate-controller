@@ -12,13 +12,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 
 from .const import SUBENTRY_TYPE_ROOM
-from .models import Profile, Room
+from .models import Profile, Room, format_profile_id
 from .store import ProfileStore
 
 if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
     from .constraints import ConstraintsValidator
     from .controller import RoomController
     from .scheduler import ProfileScheduler
@@ -71,8 +72,6 @@ class RoomClimateHub:
 
     def get_profile(self, profile_id: str) -> Profile | None:
         """Return the profile with the given id, if any."""
-        from .models import format_profile_id
-
         canonical = format_profile_id(profile_id)
         return next((p for p in self.profiles if p.id == canonical), None)
 

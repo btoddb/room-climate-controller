@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-from homeassistant.core import HomeAssistant
+from typing import TYPE_CHECKING
+
 from homeassistant.helpers.storage import Store
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 from .const import STORAGE_KEY, STORAGE_VERSION
 from .models import Profile

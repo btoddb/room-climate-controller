@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+from typing import TYPE_CHECKING
+
 import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
@@ -40,7 +43,6 @@ from .entity import (
     resolve_profile_entity,
     resolve_room_entity,
 )
-from .hub import RoomClimateConfigEntry
 from .models import (
     Profile,
     Room,
@@ -49,6 +51,9 @@ from .models import (
     next_profile_id,
     normalize_time_hhmm,
 )
+
+if TYPE_CHECKING:
+    from .hub import RoomClimateConfigEntry
 
 
 @callback
@@ -283,7 +288,7 @@ async def ws_create_profile(
             return
 
     profile = Profile.with_defaults(
-        id=next_profile_id(hub.profile_ids), name=name, room=room
+        profile_id=next_profile_id(hub.profile_ids), name=name, room=room
     )
     profile.time = run_time
     if msg["copy_room_settings"]:
@@ -457,15 +462,18 @@ def _copy_room_into_profile(
             hass, entry.entry_id, room.key, KEY_TARGET[device], "number"
         )
         if target_eid and (state := hass.states.get(target_eid)) is not None:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 preset.temp = float(state.state)
-            except TypeError, ValueError:
-                pass
-    if room.has_ac and room.ac_fan_only:
-        if ov_eid := resolve_room_entity(
-            hass, entry.entry_id, room.key, KEY_AC_FAN_ONLY, "switch"
-        ):
-            profile.fan_override = hass.states.is_state(ov_eid, STATE_ON)
+    if (
+        room.has_ac
+        and room.ac_fan_only
+        and (
+            ov_eid := resolve_room_entity(
+                hass, entry.entry_id, room.key, KEY_AC_FAN_ONLY, "switch"
+            )
+        )
+    ):
+        profile.fan_override = hass.states.is_state(ov_eid, STATE_ON)
 
 
 def _remove_profile_device(

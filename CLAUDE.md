@@ -20,6 +20,7 @@ pins the HA/lint toolchain.
 
 - **Python version:** target python version 3.14 or newer
 - **Ruff Formatting:** format all code according to the ruff formatting rules
+- **Ruff Linting:** Ensure coding decisions are made with ruff linting rules in mind
 
 ## Key dev commands
 

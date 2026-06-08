@@ -23,3 +23,20 @@ keep-runtime-typing = true
 
 [lint.mccabe]
 max-complexity = 25
+
+[lint.per-file-ignores]
+"custom_components/room_climate_controller/tests/*.py" = [
+    "ANN",     # type annotations not required in tests
+    "C408",    # dict() literal style
+    "D103",    # missing docstrings in test functions
+    "D104",    # missing docstring in public package
+    "FBT002",  # boolean default positional arg
+    "PLR0913", # too many arguments
+    "PLR2004", # magic values in comparisons
+    "PT018",   # assertion should be broken into parts
+    "S101",    # assert is the normal test pattern
+    "T201",    # print() used in the standalone test runner
+]
+"custom_components/room_climate_controller/engine.py" = [
+    "S101",    # assert used for type-narrowing invariants
+]

@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 from datetime import time
+from typing import TYPE_CHECKING
 
 from homeassistant.components.time import TimeEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import KEY_PROFILE_TIME, SIGNAL_ADD_PROFILE_ENTITIES
 from .entity import ProfileRemovalMixin, profile_device_info
-from .hub import RoomClimateConfigEntry
 from .models import Profile, normalize_time_hhmm, profile_uid
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .hub import RoomClimateConfigEntry
 
 
 async def async_setup_entry(
@@ -71,9 +75,10 @@ class ProfileTime(ProfileRemovalMixin, TimeEntity, RestoreEntity):
         """Restore last value and connect removal."""
         await super().async_added_to_hass()
         self._connect_profile_removal()
-        if (last := await self.async_get_last_state()) is not None:
-            if (restored := _parse_hhmm(last.state)) is not None:
-                self._attr_native_value = restored
+        if (last := await self.async_get_last_state()) is not None and (
+            restored := _parse_hhmm(last.state)
+        ) is not None:
+            self._attr_native_value = restored
         self._sync_to_store()
 
     async def async_set_value(self, value: time) -> None:

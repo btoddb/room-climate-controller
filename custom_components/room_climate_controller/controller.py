@@ -285,7 +285,7 @@ class RoomController:
             return None
         try:
             return float(state.state)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
 
     def _number(self, key: str, default: float) -> float:
@@ -293,7 +293,7 @@ class RoomController:
         if eid and (state := self.hass.states.get(eid)) and state.state not in _INVALID:
             try:
                 return float(state.state)
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 return default
         return default
 

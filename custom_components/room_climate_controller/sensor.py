@@ -131,7 +131,7 @@ class _MirrorSensor(SensorEntity):
         self._attr_available = True
         try:
             self._attr_native_value = float(state.state)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             self._attr_native_value = state.state
         self._attr_native_unit_of_measurement = state.attributes.get(
             "unit_of_measurement"

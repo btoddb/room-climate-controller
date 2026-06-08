@@ -50,7 +50,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ]
     )
     # Ship the Lovelace card with the integration: serve it and register it as a
-    # frontend module so users don't have to add a resource by hand.
+    # frontend module so users don't have to add a resource by hand. Serve it
+    # no-cache (cache_headers=False) so the browser revalidates every load: with
+    # a long max-age, HA's service worker can pin a stale/empty cached copy and
+    # the card silently stops registering (custom element never defined).
     add_extra_js_url(hass, "/room_climate_controller/room-climate-control-card.js")
     websocket_api.async_setup(hass)
 

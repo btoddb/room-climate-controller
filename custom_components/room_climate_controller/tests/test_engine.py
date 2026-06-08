@@ -1,4 +1,5 @@
-"""Tests for the pure reactive engine and fan logic.
+"""
+Tests for the pure reactive engine and fan logic.
 
 These modules have no Home Assistant imports, so the test loads them directly
 (bypassing the package ``__init__``) and runs with plain ``pytest`` or
@@ -82,8 +83,14 @@ def _base(**kw):
     return EngineInputs(**defaults)
 
 
-def _climate(hvac="off", fan_mode=None, fan_modes=(), min_temp=62.0, set_temp=True,
-             hvac_modes=("off", "cool")):
+def _climate(
+    hvac="off",
+    fan_mode=None,
+    fan_modes=(),
+    min_temp=62.0,
+    set_temp=True,
+    hvac_modes=("off", "cool"),
+):
     return ClimateInfo(
         entity_id="climate.ac",
         hvac_mode=hvac,
@@ -121,10 +128,18 @@ def test_fan_mode_matching():
 # --- engine -----------------------------------------------------------------
 def test_split_ac_cool_with_fan_high():
     cmds = compute_commands(
-        _base(ac=_climate(fan_modes=("low", "medium", "high")), use_ac=True, room_temp=80.0)
+        _base(
+            ac=_climate(fan_modes=("low", "medium", "high")),
+            use_ac=True,
+            room_temp=80.0,
+        )
     )
     assert _types(cmds) == [
-        "SetHvacMode", "Delay", "SetTemperature", "Delay", "SetFanMode",
+        "SetHvacMode",
+        "Delay",
+        "SetTemperature",
+        "Delay",
+        "SetFanMode",
     ]
     assert cmds[0].hvac_mode == "cool"
     # A/C is driven to its lowest settable temp (min_temp=62 here), not a 65 floor.
@@ -141,7 +156,9 @@ def test_split_ac_off_when_use_off():
 def test_ac_fan_only_override():
     cmds = compute_commands(
         _base(
-            ac=_climate(hvac_modes=("off", "cool", "fan_only"), fan_modes=("low", "high")),
+            ac=_climate(
+                hvac_modes=("off", "cool", "fan_only"), fan_modes=("low", "high")
+            ),
             use_ac=True,
             room_temp=70.0,
             ac_fan_only_override=True,
@@ -180,8 +197,13 @@ def test_combined_heat_pump_heats():
 def test_standalone_fan_medium():
     cmds = compute_commands(
         _base(
-            fan=FanInfo("fan.tower", is_on=False, preset_mode=None, percentage=0,
-                        preset_modes=("low", "medium", "high")),
+            fan=FanInfo(
+                "fan.tower",
+                is_on=False,
+                preset_mode=None,
+                percentage=0,
+                preset_modes=("low", "medium", "high"),
+            ),
             use_fan=True,
             room_temp=76.0,
         )
@@ -194,8 +216,13 @@ def test_companion_fan_percentage():
     cmds = compute_commands(
         _base(
             ac=_climate(fan_modes=()),
-            ac_fan=FanInfo("fan.companion", is_on=False, preset_mode=None,
-                           percentage=0, preset_modes=()),
+            ac_fan=FanInfo(
+                "fan.companion",
+                is_on=False,
+                preset_mode=None,
+                percentage=0,
+                preset_modes=(),
+            ),
             use_ac=True,
             room_temp=80.0,
         )
@@ -206,7 +233,9 @@ def test_companion_fan_percentage():
 def test_no_redundant_fan_mode():
     cmds = compute_commands(
         _base(
-            ac=_climate(hvac="cool", fan_mode="high", fan_modes=("low", "medium", "high")),
+            ac=_climate(
+                hvac="cool", fan_mode="high", fan_modes=("low", "medium", "high")
+            ),
             use_ac=True,
             room_temp=80.0,
         )

@@ -1,4 +1,5 @@
-"""Pure reactive-control engine (no Home Assistant imports).
+"""
+Pure reactive-control engine (no Home Assistant imports).
 
 ``compute_commands(inputs)`` is a pure function of the current room/device state
 that returns the ordered list of device commands to issue. The HA-coupled
@@ -9,7 +10,6 @@ unit-testable with plain ``python3``.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from .fan_logic import cooling_speed, heating_speed, match_fan_mode
@@ -209,8 +209,10 @@ class _Out:
 # Entry point
 # ---------------------------------------------------------------------------
 def compute_commands(inp: EngineInputs) -> list[Command]:
-    """Return the ordered commands for the current state (manual-mode gating is
-    the controller's job; this assumes control is active)."""
+    """
+    Return the ordered commands for the current state (manual-mode gating is
+    the controller's job; this assumes control is active).
+    """
     out = _Out()
     if inp.combined and inp.ac is not None:
         _combined(inp, out)
@@ -246,9 +248,7 @@ def _combined(inp: EngineInputs, out: _Out) -> None:
     )
     if uses_disabled:
         use_fan_only = (
-            inp.ac_fan_only_override
-            and ac.has_fan
-            and (not inp.has_fan or inp.use_fan)
+            inp.ac_fan_only_override and ac.has_fan and (not inp.has_fan or inp.use_fan)
         )
     else:
         use_fan_only = ac_override_fan_only or native_heater_fan_only
@@ -298,17 +298,11 @@ def _combined_speed_label(inp: EngineInputs, decision: str) -> str:
         return cooling_speed(inp.room_temp, inp.cooling_medium, inp.cooling_high)[0]
     if decision == FAN_ONLY:
         if inp.use_heater and not inp.use_ac:
-            return heating_speed(
-                inp.room_temp, inp.heating_medium, inp.heating_high
-            )[0]
+            return heating_speed(inp.room_temp, inp.heating_medium, inp.heating_high)[0]
         if inp.use_ac:
-            return cooling_speed(
-                inp.room_temp, inp.cooling_medium, inp.cooling_high
-            )[0]
+            return cooling_speed(inp.room_temp, inp.cooling_medium, inp.cooling_high)[0]
         if inp.use_heater:
-            return heating_speed(
-                inp.room_temp, inp.heating_medium, inp.heating_high
-            )[0]
+            return heating_speed(inp.room_temp, inp.heating_medium, inp.heating_high)[0]
         return cooling_speed(inp.room_temp, inp.cooling_medium, inp.cooling_high)[0]
     return "low"
 
@@ -385,11 +379,7 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
     )
     current = heater.hvac_mode
 
-    if (
-        inp.heater_power
-        and decision in (HEAT, FAN_ONLY)
-        and not inp.heater_power.is_on
-    ):
+    if inp.heater_power and decision in (HEAT, FAN_ONLY) and not inp.heater_power.is_on:
         out.add(SwitchTurnOn(inp.heater_power.entity_id), Delay(inp.power_on_delay_ms))
     if decision != OFF and current != decision:
         out.add(SetHvacMode(heater.entity_id, decision), Delay(inp.command_delay_ms))
@@ -398,9 +388,7 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
     if decision == OFF:
         out.add(TurnOffClimate(heater.entity_id))
     if decision in (HEAT, FAN_ONLY) and heater.supports_set_temp:
-        out.add(
-            SetTemperature(heater.entity_id, inp.target_heating_int, decision)
-        )
+        out.add(SetTemperature(heater.entity_id, inp.target_heating_int, decision))
     if inp.heater_power and decision == OFF:
         out.add(SwitchTurnOff(inp.heater_power.entity_id))
 

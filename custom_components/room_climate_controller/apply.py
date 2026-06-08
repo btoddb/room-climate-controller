@@ -1,4 +1,5 @@
-"""Apply a profile's presets to its room's live entities.
+"""
+Apply a profile's presets to its room's live entities.
 
 This only writes the room's live ``number``/``switch`` entities; the room's
 ``RoomController`` then reacts and drives the hardware.
@@ -21,7 +22,8 @@ _LOGGER = logging.getLogger(__name__)
 async def async_apply_profile(
     entry: RoomClimateConfigEntry, profile: Profile, *, force: bool = False
 ) -> None:
-    """Copy a profile's presets onto its room's live entities.
+    """
+    Copy a profile's presets onto its room's live entities.
 
     ``force=False`` (scheduled fire) skips when manual mode is on, mirroring the
     old blueprint. ``force=True`` (explicit "apply now") always applies.
@@ -36,7 +38,9 @@ async def async_apply_profile(
             hass, entry.entry_id, room.key, KEY_MANUAL_MODE, "switch"
         )
         if manual and hass.states.is_state(manual, STATE_ON):
-            _LOGGER.debug("Profile %s: skipped, %s in manual mode", profile.id, room.key)
+            _LOGGER.debug(
+                "Profile %s: skipped, %s in manual mode", profile.id, room.key
+            )
             return
 
     for device in room.devices:

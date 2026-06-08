@@ -1,4 +1,5 @@
-"""Pure fan-speed logic (no Home Assistant imports, fully unit-testable).
+"""
+Pure fan-speed logic (no Home Assistant imports, fully unit-testable).
 
 Ports the 3-tier speed selection and the device ``fan_mode`` matching from
 ``room_climate_control.yaml``.
@@ -39,7 +40,8 @@ def heating_speed(room_temp: float, medium: float, high: float) -> tuple[str, in
 
 
 def match_fan_mode(fan_modes: Sequence[str], label: str) -> str:
-    """Map a low/medium/high label onto a device's actual ``fan_modes``.
+    """
+    Map a low/medium/high label onto a device's actual ``fan_modes``.
 
     Returns the matching device mode, or ``""`` if none fits — mirroring the
     blueprint's preference list plus substring fallback (with the high↔medium

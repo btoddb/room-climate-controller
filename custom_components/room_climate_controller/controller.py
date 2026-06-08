@@ -50,37 +50,57 @@ _INVALID = (None, "", STATE_UNKNOWN, STATE_UNAVAILABLE, "none")
 def _service_for(cmd: Command) -> tuple[str, str, dict]:
     """Map a command to a (domain, service, data) service call."""
     if isinstance(cmd, SetHvacMode):
-        return "climate", "set_hvac_mode", {
-            "entity_id": cmd.entity_id,
-            "hvac_mode": cmd.hvac_mode,
-        }
+        return (
+            "climate",
+            "set_hvac_mode",
+            {
+                "entity_id": cmd.entity_id,
+                "hvac_mode": cmd.hvac_mode,
+            },
+        )
     if isinstance(cmd, TurnOffClimate):
         return "climate", "turn_off", {"entity_id": cmd.entity_id}
     if isinstance(cmd, SetTemperature):
-        return "climate", "set_temperature", {
-            "entity_id": cmd.entity_id,
-            "temperature": cmd.temperature,
-            "hvac_mode": cmd.hvac_mode,
-        }
+        return (
+            "climate",
+            "set_temperature",
+            {
+                "entity_id": cmd.entity_id,
+                "temperature": cmd.temperature,
+                "hvac_mode": cmd.hvac_mode,
+            },
+        )
     if isinstance(cmd, SetFanMode):
-        return "climate", "set_fan_mode", {
-            "entity_id": cmd.entity_id,
-            "fan_mode": cmd.fan_mode,
-        }
+        return (
+            "climate",
+            "set_fan_mode",
+            {
+                "entity_id": cmd.entity_id,
+                "fan_mode": cmd.fan_mode,
+            },
+        )
     if isinstance(cmd, FanTurnOn):
         return "fan", "turn_on", {"entity_id": cmd.entity_id}
     if isinstance(cmd, FanTurnOff):
         return "fan", "turn_off", {"entity_id": cmd.entity_id}
     if isinstance(cmd, FanSetPreset):
-        return "fan", "set_preset_mode", {
-            "entity_id": cmd.entity_id,
-            "preset_mode": cmd.preset_mode,
-        }
+        return (
+            "fan",
+            "set_preset_mode",
+            {
+                "entity_id": cmd.entity_id,
+                "preset_mode": cmd.preset_mode,
+            },
+        )
     if isinstance(cmd, FanSetPercentage):
-        return "fan", "set_percentage", {
-            "entity_id": cmd.entity_id,
-            "percentage": cmd.percentage,
-        }
+        return (
+            "fan",
+            "set_percentage",
+            {
+                "entity_id": cmd.entity_id,
+                "percentage": cmd.percentage,
+            },
+        )
     if isinstance(cmd, SwitchTurnOn):
         return "switch", "turn_on", {"entity_id": cmd.entity_id}
     if isinstance(cmd, SwitchTurnOff):
@@ -193,7 +213,7 @@ class RoomController:
                 )
         except asyncio.CancelledError:
             raise
-        except Exception:  # noqa: BLE001 - never let control crash the loop
+        except Exception:
             _LOGGER.exception("Room %s: control evaluation failed", self.room.key)
 
     def _build_inputs(self) -> EngineInputs | None:
@@ -265,7 +285,7 @@ class RoomController:
             return None
         try:
             return float(state.state)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
 
     def _number(self, key: str, default: float) -> float:
@@ -273,7 +293,7 @@ class RoomController:
         if eid and (state := self.hass.states.get(eid)) and state.state not in _INVALID:
             try:
                 return float(state.state)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 return default
         return default
 

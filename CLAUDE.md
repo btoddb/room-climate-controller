@@ -18,7 +18,8 @@ pins the HA/lint toolchain.
 
 ## Implementation details
 
-- **Python version:** target python version 3.13 or newer
+- **Python version:** target python version 3.14 or newer
+- **Ruff Formatting:** format all code according to the ruff formatting rules
 
 ## Key dev commands
 

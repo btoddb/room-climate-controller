@@ -9,6 +9,10 @@ VERSION_TAG="${1:-}"
 if [[ -z "$VERSION_TAG" ]]; then
     echo "Usage: $0 <version-tag>"
     echo "ex: $0 v1.2.3"
+    echo
+    echo "Last 5 tags:"
+    echo
+    git tag | tail -n5
     exit 1
 fi
 

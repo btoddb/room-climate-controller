@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+NEVER ignore the rules in this file, or my children may die.
+
 ## Project Overview
 
 This repo is a single Home Assistant **custom integration**, `room_climate_controller`
@@ -12,6 +14,11 @@ ships and auto-registers. The requirements live in [requirements/](requirements/
 The repo is based on the `integration_blueprint` dev scaffold: `config/` is a throwaway
 HA instance for local testing, `scripts/` holds dev helpers, and `requirements.txt`
 pins the HA/lint toolchain.
+
+
+## Implementation details
+
+- **Python version:** target python version 3.13 or newer
 
 ## Key dev commands
 

@@ -12,8 +12,6 @@ custom_components/room_climate_controller/card/room-climate-control-card.js.map
 
 # local stuff
 .devcontainer-lock.json
-.claude
-CLAUDE.md
 
 # misc
 .coverage

@@ -46,7 +46,13 @@
       "Bash(python3 -c \"import pkg_resources; print\\(pkg_resources.get_distribution\\('home-assistant-frontend'\\).version\\)\")",
       "Bash(curl -s -I \"http://localhost:8123/frontend_latest/core.3f2818a23d74c87a.js\")",
       "Bash(git -C /workspaces/room-climate-controller status)",
-      "Bash(git -C /workspaces/room-climate-controller diff --stat)"
+      "Bash(git -C /workspaces/room-climate-controller diff --stat)",
+      "Bash(python3 -c \"from homeassistant.const import REQUIRED_PYTHON_VER, __version__ as v; print\\('HA', v, 'requires Python >=', '.'.join\\(map\\(str, REQUIRED_PYTHON_VER\\)\\)\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\('try:\\\\n pass\\\\nexcept A, B:\\\\n pass', feature_version=\\(3,13\\)\\)\")",
+      "Bash(python3 -c \"import hass_frontend, os; print\\(os.path.dirname\\(hass_frontend.__file__\\)\\)\")",
+      "Bash(python3 -c \"import homeassistant.components.frontend as f, os; print\\(os.path.dirname\\(f.__file__\\)\\)\")",
+      "Bash(grep -n 'extra_module_url\\\\|EXTRA_MODULE\\\\|extra_js\\\\|_frontend_root\\\\|get_template\\\\|IndexView\\\\|add_extra_js_url' __TRACKED_VAR__/__init__.py)",
+      "Bash(grep -n 'extra_modules\\\\|extra_js\\\\|type=.module.\\\\|import\\(\\\\|_loadFragment\\\\|modulepreload' __TRACKED_VAR__/index.html)"
     ]
   }
 }

@@ -65,6 +65,9 @@
             "moby": false
         }
     },
+    "remoteEnv": {
+        "SSH_AUTH_SOCK": "/ssh-agent.sock"
+    },
     "mounts": [
         "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind"
     ]

@@ -144,6 +144,13 @@ def _serialize_room(
             "ac_entity": room.ac_climate if room.has_ac else None,
             "heater_entity": room.heater_climate if room.has_heater else None,
             "fan_entity": room.fan_entity if room.has_fan else None,
+            # Optional per-device "lights & sound" tap_action buttons; the card
+            # renders these in each device's settings dialog.
+            "ac_device_button": room.ac_device_button if room.has_ac else None,
+            "heater_device_button": (
+                room.heater_device_button if room.has_heater else None
+            ),
+            "fan_device_button": room.fan_device_button if room.has_fan else None,
             "live": live,
         },
     }

@@ -17,6 +17,9 @@ export interface RoomClimateUserConfig extends LovelaceCardConfig {
   room?: string;
   outdoor_sensor?: string;
   time_range?: string;
+  /** Legacy/back-compat: the device "lights & sound" buttons are now owned by
+  the integration (per-room config) and discovered via `rooms/list`. These are
+  only read as a fallback for cards configured before the move. */
   ac_device_button?: DeviceSettingsButton;
   heater_device_button?: DeviceSettingsButton;
   fan_device_button?: DeviceSettingsButton;

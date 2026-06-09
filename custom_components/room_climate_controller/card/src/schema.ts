@@ -1,36 +1,22 @@
 /** Editor schema for the room-climate-control card.
 
 The card discovers every device/helper entity from the integration for the
-chosen room, so the editor only needs a room picker, the two presentation
-helpers the integration doesn't own (outdoor sensor + graph time-range), and the
-optional per-device "lights & sound" buttons. */
+chosen room, so the editor only needs a room picker and the two presentation
+helpers the integration doesn't own (outdoor sensor + graph time-range). The
+per-device "lights & sound" buttons are owned by the integration (configured in
+the room's setup) and discovered via `rooms/list`, so they are not edited here. */
 import type { ClimateRoomMeta } from "./profiles/store";
 
 export const FORM_LABELS: Record<string, string> = {
   room: "Room",
   outdoor_sensor: "Outdoor temperature sensor",
   time_range: "Graph time-range helper",
-  ac_device_button: "A/C lights & sound button (tap_action)",
-  heater_device_button: "Heater lights & sound button (tap_action)",
-  fan_device_button: "Fan lights & sound button (tap_action)",
 };
 
-export type FormFieldName =
-  | "room"
-  | "outdoor_sensor"
-  | "time_range"
-  | "ac_device_button"
-  | "heater_device_button"
-  | "fan_device_button";
+export type FormFieldName = "room" | "outdoor_sensor" | "time_range";
 
 /** Keys the editor should clear from the config when left empty. */
-export const OPTIONAL_FIELDS: FormFieldName[] = [
-  "outdoor_sensor",
-  "time_range",
-  "ac_device_button",
-  "heater_device_button",
-  "fan_device_button",
-];
+export const OPTIONAL_FIELDS: FormFieldName[] = ["outdoor_sensor", "time_range"];
 
 const PRESENTATION_FIELDS = [
   {
@@ -43,14 +29,6 @@ const PRESENTATION_FIELDS = [
     name: "time_range",
     selector: { entity: { filter: [{ domain: "select" }, { domain: "input_select" }] } },
   },
-] as const;
-
-/** Optional per-device "lights & sound" buttons — a free-form Lovelace
-tap_action object (e.g. remote.send_command). Rendered as object/YAML editors. */
-const DEVICE_BUTTON_FIELDS = [
-  { name: "ac_device_button", selector: { object: {} } },
-  { name: "heater_device_button", selector: { object: {} } },
-  { name: "fan_device_button", selector: { object: {} } },
 ] as const;
 
 /** Build the editor schema; room options come from the integration's rooms. */
@@ -67,7 +45,6 @@ export function buildFormSchema(rooms: ClimateRoomMeta[]) {
       },
     },
     ...PRESENTATION_FIELDS,
-    ...DEVICE_BUTTON_FIELDS,
   ];
 }
 
@@ -87,8 +64,5 @@ export function formDataFromConfig(
     room: config.room ?? "",
     outdoor_sensor: config.outdoor_sensor ?? defaults.outdoor_sensor ?? "",
     time_range: config.time_range ?? defaults.time_range ?? "",
-    ac_device_button: config.ac_device_button,
-    heater_device_button: config.heater_device_button,
-    fan_device_button: config.fan_device_button,
   };
 }

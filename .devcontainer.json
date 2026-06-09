@@ -69,6 +69,7 @@
         "SSH_AUTH_SOCK": "/ssh-agent.sock"
     },
     "mounts": [
-        "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind"
+        "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind",
+        "source=${localEnv:HOME}/.ssh/agent.sock,target=/ssh-agent.sock,type=bind"
     ]
 }

@@ -1,7 +1,10 @@
 {
     "name": "btoddb/room-climate-controller",
     "image": "mcr.microsoft.com/devcontainers/base:debian",
-    "postCreateCommand": "scripts/setup && npm --prefix custom_components/room_climate_controller/card install",
+    "postCreateCommand": {
+        "setup": "scripts/setup && npm --prefix custom_components/room_climate_controller/card install",
+        "hassfest-alias": "echo 'alias hassfest=\"docker run --rm -v \\$(pwd):/github/workspace ghcr.io/home-assistant/hassfest:latest\"' >> ~/.zshrc"
+    },
     "forwardPorts": [
         8123
     ],
@@ -56,6 +59,10 @@
             // common-utils provides base commands (curl, net-tools, jq, unzip, etc)
             "installZsh": "true",
             "configureZshAsDefaultShell": "true"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:3.0.1": {
+            // moby packages aren't published for Debian trixie; use upstream Docker CE
+            "moby": false
         }
     },
     "mounts": [

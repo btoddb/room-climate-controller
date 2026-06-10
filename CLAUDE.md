@@ -32,7 +32,7 @@ pins the HA/lint toolchain.
 - **Validate manifest/HACS:** `python3 -m script.hassfest` and the
   `.github/workflows/validate.yml` workflow.
 - **Build the card:**
-  `card/deploy.sh` to build, bump the version, and copy into `www/`). Edit
+  `scripts/deploy.sh` to build, bump the version, and copy into `www/`). Edit
   `card/src/*.ts` — never hand-edit the generated `www/*.js` bundle.
 
 

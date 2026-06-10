@@ -27,21 +27,16 @@ export const cardStyles = css`
     flex: 1;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 8px 12px;
     border-radius: 8px;
     background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
   }
 
-  .sensor-label {
-    font-size: 0.85rem;
-    color: var(--secondary-text-color);
-  }
-
   .sensor-value {
     font-size: 1.1rem;
     font-weight: 500;
-    margin-left: auto;
   }
 
   .devices-section {

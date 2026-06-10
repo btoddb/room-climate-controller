@@ -163,13 +163,11 @@ export class RoomClimateControl extends LitElement {
         <div class="header">${c.room_name}</div>
         <div class="sensor-row">
           <div class="sensor-item">
-            <span class="sensor-label">Temperature</span>
             <span class="sensor-value">${formatSensorValue(this.hass, c.temp_sensor)}</span>
           </div>
           ${entityConfigured(c.humidity_sensor)
             ? html`
                 <div class="sensor-item">
-                  <span class="sensor-label">Humidity</span>
                   <span class="sensor-value"
                     >${formatSensorValue(this.hass, c.humidity_sensor)}</span
                   >

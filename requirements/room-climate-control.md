@@ -26,6 +26,8 @@ I want to create a new per room climate control mechanism in HA.  It will automa
 - If a room does not have a device, like office doesn't have a heater, the device type should be ignored in all automations, dashboard cards, etc
 - When automations trigger notifications (for instance, because of errors), send them so they appear in HA's notifications tab
   - Don't use deprecated notification methods
+- when comparing temperatures, truncate the value to the nearest whole number.
+  - For display purposes, it's probably nice to include tenths of a degree
 
 ## Automation
 
@@ -167,6 +169,7 @@ Create a dashboard card, Room Climate Control, so the user can view relevant roo
 It should have a main panel that shows the following:
 - Heading with the room name, centered horizontally on the car, with a larger font than rest of text
 - First section has the room's current temp and humidity
+  - only show the values and units
 - A section for each device type: Cooling, Heating, and Fan with the following info
   - Name: clicking here shows the actual device's more info popup dialog
   - Target temp, view only

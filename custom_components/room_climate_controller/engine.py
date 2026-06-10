@@ -122,13 +122,13 @@ class EngineInputs:
 
     @property
     def target_heating_int(self) -> int:
-        """Return the heating target rounded to the nearest integer."""
-        return round(self.target_heating)
+        """Return the heating target truncated to whole degrees."""
+        return int(self.target_heating)
 
     @property
     def fan_needs_on(self) -> bool:
         """Return True when the standalone fan should run."""
-        return self.use_fan and self.room_temp > self.target_fan
+        return self.use_fan and int(self.room_temp) > int(self.target_fan)
 
 
 # ---------------------------------------------------------------------------
@@ -260,8 +260,9 @@ def compute_commands(inp: EngineInputs) -> list[Command]:
 def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
     ac = inp.ac
     assert ac is not None
-    needs_cool = inp.use_ac and inp.room_temp > inp.target_cooling
-    needs_heat = inp.use_heater and inp.room_temp < inp.target_heating
+    room = int(inp.room_temp)
+    needs_cool = inp.use_ac and room > int(inp.target_cooling)
+    needs_heat = inp.use_heater and room < int(inp.target_heating)
     uses_disabled = not inp.use_ac and not inp.use_heater
     ac_override_fan_only = (
         inp.ac_fan_only_override
@@ -283,9 +284,9 @@ def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
 
     if uses_disabled and not use_fan_only:
         decision = OFF
-    elif inp.use_ac and inp.room_temp > inp.target_cooling:
+    elif inp.use_ac and room > int(inp.target_cooling):
         decision = COOL
-    elif inp.use_heater and inp.room_temp < inp.target_heating:
+    elif inp.use_heater and room < int(inp.target_heating):
         decision = HEAT
     elif use_fan_only:
         decision = FAN_ONLY
@@ -341,7 +342,7 @@ def _combined_speed_label(inp: EngineInputs, decision: str) -> str:  # noqa: PLR
 def _split_ac(inp: EngineInputs, out: _Out) -> None:
     ac = inp.ac
     assert ac is not None
-    needs_cool = inp.use_ac and inp.room_temp > inp.target_cooling
+    needs_cool = inp.use_ac and int(inp.room_temp) > int(inp.target_cooling)
     override_fan_only = (
         inp.ac_fan_only_override
         and ac.has_fan
@@ -390,7 +391,7 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
 def _split_heater(inp: EngineInputs, out: _Out) -> None:
     heater = inp.heater
     assert heater is not None
-    needs_heat = inp.use_heater and inp.room_temp < inp.target_heating
+    needs_heat = inp.use_heater and int(inp.room_temp) < int(inp.target_heating)
     native_fan_only = inp.use_heater and not needs_heat and heater.has_fan
     override_fan_only = (
         inp.heater_fan_only_override

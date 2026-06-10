@@ -26,6 +26,7 @@ _PREF: dict[str, list[str]] = {
 
 def cooling_speed(room_temp: float, medium: float, high: float) -> tuple[str, int]:
     """Hotter rooms cool harder: speed rises as temp passes target+offsets."""
+    room_temp, medium, high = int(room_temp), int(medium), int(high)
     if room_temp >= high:
         return HIGH
     if room_temp >= medium:
@@ -35,6 +36,7 @@ def cooling_speed(room_temp: float, medium: float, high: float) -> tuple[str, in
 
 def heating_speed(room_temp: float, medium: float, high: float) -> tuple[str, int]:
     """Heat harder as temp drops: offsets from target where high < medium."""
+    room_temp, medium, high = int(room_temp), int(medium), int(high)
     if room_temp <= high:
         return HIGH
     if room_temp <= medium:

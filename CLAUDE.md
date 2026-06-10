@@ -2,18 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-NEVER ignore the rules in this file, or my children may die.
+**These rules are non-negotiable — follow them exactly.**
 
 ## Project Overview
 
 This repo is a single Home Assistant **custom integration**, `room_climate_controller`
 (HACS-installable), that does per-room climate control and scheduled daily climate
 **profiles** entirely in-process — plus a companion Lit/TypeScript Lovelace card it
-ships and auto-registers. The requirements live in [requirements/](requirements/).
+ships and auto-registers.
 
 The repo is based on the `integration_blueprint` dev scaffold: `config/` is a throwaway
 HA instance for local testing, `scripts/` holds dev helpers, and `requirements.txt`
 pins the HA/lint toolchain.
+
+`custom_components/dreo/` is a **vendored third-party integration** kept only for
+local testing — do not modify it.
+
+## Requirements
+
+Functional behavior is specified in [requirements/](requirements/) — start at
+[requirements/README.md](requirements/README.md). The living spec under
+`requirements/spec/` always reflects shipped behavior; new work starts in
+`requirements/proposals/`. When something ships, fold it into the spec.
 
 
 ## Implementation details
@@ -31,9 +41,11 @@ pins the HA/lint toolchain.
   `python3 custom_components/room_climate_controller/tests/test_engine.py`
 - **Validate manifest/HACS:** `python3 -m script.hassfest` and the
   `.github/workflows/validate.yml` workflow.
-- **Build the card:**
-  `scripts/deploy.sh` to build, bump the version, and copy into `www/`). Edit
-  `card/src/*.ts` — never hand-edit the generated `www/*.js` bundle.
+- **Build the card:** `scripts/deploy.sh` builds, bumps the version, and copies
+  into `www/`. Edit the TypeScript source at
+  `custom_components/room_climate_controller/card/src/*.ts` — never hand-edit the
+  generated `www/*.js` bundle. (Card-specific guidance lives in that folder's
+  `CLAUDE.md`.)
 
 
 ## Git workflow

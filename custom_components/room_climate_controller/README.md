@@ -72,7 +72,8 @@ discovers that room's sensors, devices, and helpers from the integration. A read
 sample dashboard is in [`examples/dashboard.yaml`](examples/dashboard.yaml).
 
 The Energy/History graph dialogs use **lovelace-plotly-graph-card** (install via
-HACS) and the `input_select.time_range` helper.
+HACS) and the integration's own graph time-range selector (a `select.*` entity it
+creates — no hand-made `input_select` helper needed).
 
 ## Services
 

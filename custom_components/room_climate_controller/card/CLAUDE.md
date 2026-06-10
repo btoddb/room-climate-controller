@@ -17,6 +17,12 @@ UX behavior is specified in
 - For a build without the version bump/deploy: `npm install && npm run build` here.
 - Node/npm comes from the devcontainer's Node feature; it is **not** part of the base
   Python image, so `scripts/develop` (HA) doesn't provide it.
+- **Never hand-edit `package.json`'s `version`** — `deploy.sh` owns it.
+- **Banner-regex trap:** `deploy.sh` rewrites the **first** `v\d+.\d+.\d+`-shaped
+  string in `src/index.ts` to sync the version. Don't add any other `vX.Y.Z`-looking
+  literal earlier in that file, or the version sync silently targets the wrong string.
+- **Dependencies:** the only runtime dependency is `lit`. Don't add npm dependencies
+  without asking first — extra libs bloat the single-file bundle.
 
 ## Layout
 
@@ -25,6 +31,12 @@ UX behavior is specified in
 - `profiles-panel.ts` + `profiles/` + `profile-styles.ts` — the Profiles section.
 - `settings-ui.ts`, `graph-configs.ts`, `graph-overlay.ts` — settings dialog and the plotly energy/history graphs.
 - `resolve-room.ts` / `schema.ts` / `types.ts` / `ha-types.ts` / `helpers.ts` / `styles.ts` — shared plumbing.
+
+## Contract with the integration
+
+`schema.ts` / `types.ts` mirror the websocket message shapes defined in the
+integration's `websocket_api.py`. They are two halves of one contract — change a
+message shape on one side and you must update the other.
 
 ## UX musts (see card-ux.md for the full list)
 

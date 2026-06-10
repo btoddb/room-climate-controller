@@ -4,5 +4,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-ruff format .
-ruff check . --fix
+# Lint/format only our integration. Everything else under custom_components/ is a
+# vendored third-party integration kept for local testing and must not be touched.
+ruff format custom_components/room_climate_controller
+ruff check custom_components/room_climate_controller --fix

@@ -24,17 +24,26 @@ this file is about *how the code is laid out and tested*.
 ## Rules
 
 - **Python 3.14+.** Format and lint with **ruff** (`scripts/lint`); make coding choices with ruff's rules in mind.
-- **Keep `engine.py`, `fan_logic.py`, and `models.py` HA-free** — that's what makes the control logic unit-testable in plain Python. Don't add `homeassistant` imports there.
+- **Keep `engine.py` and `fan_logic.py` fully standalone** — they must import **nothing** from Home Assistant *and nothing from this integration* (no `const.py`, no `models.py`; `const.py` itself imports `homeassistant`). That total isolation is why they define their own input dataclasses and why `tests/test_engine.py` can load them without HA. `models.py` is looser: it imports `const.py`, so it isn't HA-free, but it must avoid **direct** `homeassistant` imports.
+- **Temperatures are °F; comparisons truncate to whole degrees via `int()`** (see [requirements/README.md](../../requirements/README.md) "Conventions"). Never switch threshold/target comparisons to `round()` or raw float math.
 - **Entity identity is deterministic.** Use `room_uid()` / `profile_uid()` (`models.py`) and the `KEY_*` maps (`const.py`) — don't hand-build unique_ids.
+
+## Cross-file contracts (change both sides together)
+
+- **`config_flow.py` ⇄ `strings.json` ⇄ `translations/en.json`** — any new/renamed config or option key needs matching entries in both translation files.
+- **`websocket_api.py` ⇄ `card/src/schema.ts` & `card/src/types.ts`** — the websocket message shapes are the card↔integration contract. Change a message shape on one side and you must change the other.
 
 ## Tests
 
-The engine is tested without Home Assistant:
+The engine is tested without Home Assistant, under plain pytest:
 
 ```bash
-python3 custom_components/room_climate_controller/tests/test_engine.py
-# or: pytest custom_components/room_climate_controller/tests/
+pytest custom_components/room_climate_controller/tests/
 ```
+
+`test_engine.py` uses a `_load()` import shim to pull in `engine`/`fan_logic`
+directly, bypassing the package `__init__` (which imports HA). Keep that shim; don't
+add `homeassistant` imports to the test module.
 
 Add a failing engine test before changing control logic; map cases to the `CC-*`
 rules in `requirements/spec/climate-control.md`.

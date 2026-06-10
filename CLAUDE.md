@@ -15,8 +15,11 @@ The repo is based on the `integration_blueprint` dev scaffold: `config/` is a th
 HA instance for local testing, `scripts/` holds dev helpers, and `requirements.txt`
 pins the HA/lint toolchain.
 
-`custom_components/dreo/` is a **vendored third-party integration** kept only for
-local testing — do not modify it.
+Every directory under `custom_components/` **except `room_climate_controller`** is a
+**vendored third-party integration** kept only for local testing (currently
+`custom_components/dreo/`). Never modify any of them. If any command — including
+`scripts/lint` — leaves changes under one of these directories, revert them; never
+commit a diff outside `room_climate_controller`.
 
 ## Requirements
 
@@ -34,11 +37,15 @@ Functional behavior is specified in [requirements/](requirements/) — start at
 
 ## Key dev commands
 
-- **Run HA locally:** `scripts/develop` (launches HA against `config/`; note no
-  Node/npm is preinstalled in this devcontainer).
-- **Lint:** `scripts/lint` (ruff).
+- **Run HA locally:** `scripts/develop` (launches HA against `config/`). It runs HA
+  in the **foreground** with `--debug` and does not return — to verify a change,
+  background it and read `config/home-assistant.log`. Node/npm *are* available in
+  this devcontainer (Node feature); `scripts/develop` is unrelated to the card build.
+- **Lint:** `scripts/lint` (ruff). It **rewrites files** (`ruff format` +
+  `ruff check --fix`) — it is not a check-only command, so expect working-tree
+  changes after it runs.
 - **Engine unit tests (no HA needed):**
-  `python3 custom_components/room_climate_controller/tests/test_engine.py`
+  `pytest custom_components/room_climate_controller/tests/`
 - **Validate manifest/HACS:** `python3 -m script.hassfest` and the
   `.github/workflows/validate.yml` workflow.
 - **Build the card:** `scripts/deploy.sh` builds, bumps the version, and copies
@@ -46,6 +53,22 @@ Functional behavior is specified in [requirements/](requirements/) — start at
   `custom_components/room_climate_controller/card/src/*.ts` — never hand-edit the
   generated `www/*.js` bundle. (Card-specific guidance lives in that folder's
   `CLAUDE.md`.)
+
+## Versioning
+
+There are **two independent version numbers** — never hand-edit either:
+
+- **Integration:** `manifest.json` (`"version": "vX.Y.Z"` — the leading `v` is
+  intentional). Bumped only by `scripts/create-release.sh`.
+- **Card:** `card/package.json` (plain `X.Y.Z`). Bumped only by `scripts/deploy.sh`,
+  which also syncs the console banner in `card/src/index.ts`.
+
+## Spec discipline
+
+- A change in behavior must update the matching rule in `requirements/spec/` **in the
+  same change** — the living spec always reflects shipped code.
+- Rule IDs (`CC-*`, `PR-*`, `UX-*`) are **stable**: add new IDs, never renumber or
+  reuse existing ones. Cite the IDs you touched in commits and PRs.
 
 
 ## Git workflow

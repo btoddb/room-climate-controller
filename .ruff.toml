@@ -2,6 +2,10 @@
 
 target-version = "py314"
 
+# Vendored third-party integrations (local testing only) — never lint or format
+# these. Add any new vendored component dir here.
+exclude = ["custom_components/dreo"]
+
 [lint]
 select = [
     "ALL",
@@ -35,7 +39,6 @@ max-complexity = 25
     "PLR2004", # magic values in comparisons
     "PT018",   # assertion should be broken into parts
     "S101",    # assert is the normal test pattern
-    "T201",    # print() used in the standalone test runner
 ]
 "custom_components/room_climate_controller/engine.py" = [
     "S101",    # assert used for type-narrowing invariants

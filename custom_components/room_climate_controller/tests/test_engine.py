@@ -2,8 +2,10 @@
 Tests for the pure reactive engine and fan logic.
 
 These modules have no Home Assistant imports, so the test loads them directly
-(bypassing the package ``__init__``) and runs with plain ``pytest`` or
-``python3 tests/test_engine.py`` — no HA test harness required.
+(via the ``_load`` shim, bypassing the package ``__init__``) and runs under plain
+``pytest`` — no HA test harness required::
+
+    pytest custom_components/room_climate_controller/tests/
 """
 
 import importlib.util
@@ -241,17 +243,3 @@ def test_no_redundant_fan_mode():
         )
     )
     assert not any(isinstance(c, SetFanMode) for c in cmds)
-
-
-if __name__ == "__main__":
-    failed = 0
-    for name, fn in sorted(globals().items()):
-        if name.startswith("test_") and callable(fn):
-            try:
-                fn()
-                print(f"  ok   {name}")
-            except AssertionError as exc:
-                failed += 1
-                print(f"  FAIL {name}: {exc}")
-    print("ALL PASSED" if not failed else f"{failed} FAILED")
-    sys.exit(1 if failed else 0)

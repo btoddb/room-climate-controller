@@ -17,5 +17,5 @@
     "custom_components.room_climate_controller"
   ],
   "requirements": [],
-  "version": "v0.4.3"
+  "version": "v0.4.5"
 }

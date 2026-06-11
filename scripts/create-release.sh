@@ -16,6 +16,11 @@ if [[ -z "$VERSION_TAG" ]]; then
     exit 1
 fi
 
+if [[ ! "$VERSION_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Error: version tag '$VERSION_TAG' is invalid — must be 'v' followed by exactly 3 dot-separated integers (e.g. v1.2.3)"
+    exit 1
+fi
+
 # Verify tag not already used locally or remotely
 if git -C "$REPO_ROOT" tag --list "$VERSION_TAG" | grep -q .; then
     echo "Error: tag '$VERSION_TAG' already exists locally"

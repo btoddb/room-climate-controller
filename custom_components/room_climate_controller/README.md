@@ -65,8 +65,8 @@ No YAML, no `secrets.yaml` token, no scripts to copy.
 
 ## The Lovelace card
 
-The companion card ships inside the integration and is **auto-registered** as a
-frontend module — no manual Lovelace resource needed. Add a card of type
+The companion card ships inside the integration and **auto-registers its own
+Lovelace resource** — nothing to add by hand. Add a card of type
 `custom:room-climate-control` and pick a room in the visual editor; the card
 discovers that room's sensors, devices, and helpers from the integration. A ready
 sample dashboard is in [`examples/dashboard.yaml`](examples/dashboard.yaml).

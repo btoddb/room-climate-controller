@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -9,6 +10,8 @@ from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.lovelace import LOVELACE_DATA
+from homeassistant.components.lovelace.resources import ResourceStorageCollection
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
@@ -39,24 +42,66 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 SERVICE_APPLY_PROFILE = "apply_profile"
 SERVICE_SET_MANUAL_MODE = "set_manual_mode"
 
+CARD_URL_BASE = "/room_climate_controller"
+CARD_FILENAME = "room-climate-control-card.js"
+
+
+def _card_digest(path: Path) -> str:
+    """Short content hash of the card bundle, used as a cache-busting query param."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:8]
+
+
+async def _async_register_card(hass: HomeAssistant) -> None:
+    """
+    Make the card available to dashboards without manual resource setup.
+
+    The card must be a Lovelace *resource*, not an extra frontend module
+    (add_extra_js_url): extra modules are baked into index.html at render time,
+    and HA's service worker caches dashboard pages stale-while-revalidate. A
+    page rendered while HA was still starting (this integration not yet set up)
+    lacks the module import, and clients keep getting that cached copy — cards
+    intermittently fail with "custom element doesn't exist: room-climate-control"
+    until the cache turns over. Resources are fetched over websocket at
+    dashboard load, so they can't go stale with the page. The content-hash
+    query param busts HTTP/service-worker caches whenever the bundle changes.
+    """
+    card_path = Path(__file__).parent / "www" / CARD_FILENAME
+    try:
+        digest = await hass.async_add_executor_job(_card_digest, card_path)
+    except OSError:
+        _LOGGER.exception("Card bundle missing or unreadable: %s", card_path)
+        return
+    base_url = f"{CARD_URL_BASE}/{CARD_FILENAME}"
+    url = f"{base_url}?v={digest}"
+
+    resources = hass.data[LOVELACE_DATA].resources
+    if not isinstance(resources, ResourceStorageCollection):
+        # Resources are YAML-managed (read-only to us); fall back to the
+        # index-injected module and accept the stale-index race.
+        add_extra_js_url(hass, url)
+        return
+
+    await resources.async_get_info()  # force-load the collection from storage
+    for item in resources.async_items():
+        if item["url"].partition("?")[0] == base_url:
+            if item["url"] != url:
+                await resources.async_update_item(item["id"], {"url": url})
+            return
+    await resources.async_create_item({"res_type": "module", "url": url})
+
 
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Register websocket commands and services (once)."""
     await hass.http.async_register_static_paths(
         [
             StaticPathConfig(
-                "/room_climate_controller",
+                CARD_URL_BASE,
                 str(Path(__file__).parent / "www"),
                 cache_headers=False,
             )
         ]
     )
-    # Ship the Lovelace card with the integration: serve it and register it as a
-    # frontend module so users don't have to add a resource by hand. Serve it
-    # no-cache (cache_headers=False) so the browser revalidates every load: with
-    # a long max-age, HA's service worker can pin a stale/empty cached copy and
-    # the card silently stops registering (custom element never defined).
-    add_extra_js_url(hass, "/room_climate_controller/room-climate-control-card.js")
+    await _async_register_card(hass)
     websocket_api.async_setup(hass)
 
     def _loaded_entry() -> RoomClimateConfigEntry | None:

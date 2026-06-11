@@ -1,8 +1,9 @@
 # Lovelace card — guidance
 
 The companion card (`custom:room-climate-control`), built with **Lit + TypeScript**.
-The integration serves it at `/room_climate_controller/` and auto-registers it as a
-frontend module — there is **no** Lovelace resource to add and no HA restart needed.
+The integration serves it at `/room_climate_controller/` and auto-creates its
+Lovelace **resource** (URL versioned with a content hash, UX-27) — nothing to add
+by hand and no HA restart needed.
 UX behavior is specified in
 [../../../requirements/spec/card-ux.md](../../../requirements/spec/card-ux.md).
 

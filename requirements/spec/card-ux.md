@@ -1,7 +1,7 @@
 # Spec: Lovelace card & UX
 
 The integration ships a companion Lit/TypeScript card (`custom:room-climate-control`)
-and **auto-registers** it as a frontend module. The card discovers a room's
+and **auto-registers** it (UX-27). The card discovers a room's
 sensors, devices, and control entities from the integration; the user only picks
 a room in the visual editor. Source lives in
 [`card/src/`](../../custom_components/room_climate_controller/card/src/) — never
@@ -15,6 +15,7 @@ hand-edit the generated `www/` bundle.
 - **UX-4** Temperatures display with tenths; comparisons are whole-degree (CC-5). Show units.
 - **UX-5** A fan that's **off** shows status "Off", not a 0%/speed percentage.
 - **UX-6** **No layout shift on button press.** After a press, indicate success by changing the button's *appearance* (not its size) and don't inject text that reflows the dialog. Light/sound buttons briefly deactivate (~1 s) on press, then reactivate.
+- **UX-27** **Zero-setup, cache-proof card registration.** The integration serves the card bundle itself and registers it as a **Lovelace resource** whose URL carries a content-hash `?v=` param (when resources are YAML-managed it falls back to an extra frontend module). It must never rely on URLs baked into `index.html`: the frontend's service worker caches dashboard pages, so a page cached during HA startup would permanently miss the card ("custom element doesn't exist"). A bundle change must change the resource URL so stale HTTP/service-worker caches are bypassed.
 
 ## Main card
 

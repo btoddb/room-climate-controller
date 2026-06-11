@@ -11,6 +11,12 @@ export function entityAvailable(hass: HomeAssistant, entityId?: string): boolean
   return state.state !== "unavailable" && state.state !== "unknown";
 }
 
+/** True only when the window contact reads "on" (open). Unconfigured, missing,
+unavailable, and unknown all read as closed — matching the engine's fail-safe (CC-21). */
+export function windowOpen(hass: HomeAssistant, entityId?: string): boolean {
+  return entityConfigured(entityId) && hass.states[entityId!]?.state === "on";
+}
+
 export function formatSensorValue(
   hass: HomeAssistant,
   entityId?: string,

@@ -101,6 +101,28 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
   }
 
+  /* Use toggle disabled while the window is open (UX-26). pointer-events: none
+     because ha-entity-toggle has no disabled prop; value stays displayed. */
+  .rcc-suppressed {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Window status banner shown above Manual Mode (UX-26). */
+  .window-status-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    color: var(--secondary-text-color);
+    border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+  }
+
+  .window-status-row.window-status-open {
+    color: var(--warning-color, var(--secondary-text-color));
+  }
+
   .footer {
     display: flex;
     gap: 8px;

@@ -42,6 +42,7 @@ from .const import (
     CONF_POWER_SENSOR,
     CONF_ROOM_KEY,
     CONF_TEMPERATURE_SENSOR,
+    CONF_WINDOW_SENSOR,
     DEFAULT_COMMAND_DELAY,
     DEFAULT_LIMITS,
     DEFAULT_POWER_ON_DELAY,
@@ -242,6 +243,8 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
             self._data[CONF_TEMPERATURE_SENSOR] = user_input[CONF_TEMPERATURE_SENSOR]
             self._data[CONF_HUMIDITY_SENSOR] = user_input.get(CONF_HUMIDITY_SENSOR)
             self._data[CONF_POWER_SENSOR] = user_input.get(CONF_POWER_SENSOR)
+            # .get() (not user_input[...]) so clearing it on reconfigure removes it.
+            self._data[CONF_WINDOW_SENSOR] = user_input.get(CONF_WINDOW_SENSOR)
             self._data[CONF_COMMAND_DELAY] = user_input[CONF_COMMAND_DELAY]
             self._data[CONF_POWER_ON_DELAY] = user_input[CONF_POWER_ON_DELAY]
             # Combined heat pump uses one climate entity for both modes.
@@ -258,6 +261,9 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
             ),
             vol.Optional(CONF_POWER_SENSOR): _entity(
                 "sensor", device_classes=["power"]
+            ),
+            vol.Optional(CONF_WINDOW_SENSOR): _entity(
+                "binary_sensor", device_classes=["window", "door", "opening"]
             ),
         }
         for device, lo, hi in (

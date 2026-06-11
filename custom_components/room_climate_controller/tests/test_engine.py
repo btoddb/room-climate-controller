@@ -354,3 +354,164 @@ def test_combined_fan_only_heater_only_uses_heating_tiers():
     )
     assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "fan_only" for c in cmds)
     assert any(isinstance(c, SetFanMode) and c.fan_mode == "medium" for c in cmds)
+
+
+# --- window sensor (CC-20 / CC-21) ------------------------------------------
+def test_window_open_blocks_split_ac():
+    """CC-20: open window suppresses Cool regardless of temp delta / Use toggle."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high")),
+            use_ac=True,
+            room_temp=80.0,
+            window_open=True,
+        )
+    )
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds)
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_window_open_turns_off_running_ac():
+    """CC-20: an A/C actively cooling is turned off when the window opens."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="cool", fan_modes=("low", "high")),
+            use_ac=True,
+            room_temp=80.0,
+            window_open=True,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds)
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds)
+
+
+def test_window_open_turns_off_running_heater():
+    """CC-20: a (non-fan) heater actively heating is turned off on window open."""
+    cmds = compute_commands(
+        _base(
+            heater=_climate(hvac="heat", hvac_modes=("off", "heat")),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+            window_open=True,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds)
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "heat" for c in cmds)
+
+
+def test_window_open_combined_blocks_both():
+    """CC-20: a combined heat pump conditions in neither direction when open."""
+    cooling = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(hvac="cool", hvac_modes=("off", "cool", "heat")),
+            use_ac=True,
+            room_temp=80.0,
+            window_open=True,
+        )
+    )
+    assert not any(
+        isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cooling
+    )
+
+    heating = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(hvac="heat", hvac_modes=("off", "cool", "heat")),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+            window_open=True,
+        )
+    )
+    assert not any(
+        isinstance(c, SetHvacMode) and c.hvac_mode == "heat" for c in heating
+    )
+
+
+def test_window_close_resumes_cooling():
+    """CC-20: closing the window re-enables Cool (pure re-evaluation)."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high")),
+            use_ac=True,
+            room_temp=80.0,
+            window_open=False,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds)
+    assert any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_window_open_standalone_fan_unaffected():
+    """CC-20: the standalone fan runs identically open or closed."""
+
+    def _run(*, window_open):
+        return compute_commands(
+            _base(
+                fan=FanInfo(
+                    "fan.tower",
+                    is_on=False,
+                    preset_mode=None,
+                    percentage=0,
+                    preset_modes=("low", "medium", "high"),
+                ),
+                use_fan=True,
+                room_temp=80.0,
+                window_open=window_open,
+            )
+        )
+
+    assert _types(_run(window_open=True)) == _types(_run(window_open=False))
+    assert any(type(c).__name__ == "FanTurnOn" for c in _run(window_open=True))
+
+
+def test_window_open_targets_written_but_suppressed():
+    """CC-20: a just-applied profile's low target still can't cool while open."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high")),
+            use_ac=True,
+            room_temp=80.0,
+            target_cooling=68.0,  # freshly applied aggressive cooling target
+            window_open=True,
+        )
+    )
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds)
+
+
+def test_window_open_ac_fan_only_override_still_runs():
+    """CC-20: fan-only override is circulation, not conditioning — still runs."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(
+                hvac_modes=("off", "cool", "fan_only"), fan_modes=("low", "high")
+            ),
+            use_ac=True,
+            room_temp=80.0,
+            ac_fan_only_override=True,
+            window_open=True,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "fan_only" for c in cmds)
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds)
+
+
+def test_window_open_heater_native_fan_only():
+    """CC-20: a fan-capable heater still runs native fan-only with the window open."""
+    cmds = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="heat",
+                hvac_modes=("off", "heat", "fan_only"),
+                fan_modes=("low", "high"),
+            ),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+            window_open=True,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "fan_only" for c in cmds)
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "heat" for c in cmds)

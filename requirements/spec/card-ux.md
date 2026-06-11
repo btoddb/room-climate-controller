@@ -58,6 +58,7 @@ on click. See `profiles.md` for behavior.
 - **UX-22** **Add** swaps the dialog to a name + time entry with **Create**/**Cancel**. Time defaults to the next 15-minute interval; focus starts in the Name field.
 - **UX-23** Each profile has **Apply now**, plus **copy/paste** buttons (PR-8–PR-10).
 - **UX-24** If editing a profile's time **reorders the list**, the cursor/focus moves *with* that profile (it must not stay at the old index on a different profile).
+- **UX-25** When a profile action fails (apply, rename, delete, time change, copy, paste), show a **user-readable inline error message** in that profile's row, in addition to the button's error flash. Success stays flash-only (UX-6).
 
 ## Sample dashboard
 

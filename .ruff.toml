@@ -35,6 +35,7 @@ max-complexity = 25
     "D103",    # missing docstrings in test functions
     "D104",    # missing docstring in public package
     "FBT002",  # boolean default positional arg
+    "INP001",  # deliberately no __init__.py: keeps pytest from importing the HA-dependent integration package
     "PLR0913", # too many arguments
     "PLR2004", # magic values in comparisons
     "PT018",   # assertion should be broken into parts

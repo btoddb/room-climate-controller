@@ -55,6 +55,7 @@ export class RoomClimateProfilesPanel extends LitElement {
   @state() private _newProfileTime = "06:00";
   @state() private _showAddForm = false;
   @state() private _addError = "";
+  @state() private _actionError: Record<string, string> = {};
   @state() private _renameDrafts: Record<string, string> = {};
   @state() private _feedbackVersion = 0;
   @state() private _fieldFeedback: Record<string, ButtonFeedback> = {};
@@ -236,24 +237,35 @@ export class RoomClimateProfilesPanel extends LitElement {
 
   private async _copyProfile(routine: RoutineConfig): Promise<void> {
     const key = `copy-${routine.profileId}`;
+    this._clearActionError(routine.profileId);
     try {
       const payload = buildClipboardPayload(this.hass, [routine.room]);
       await writeRoutineClipboard(payload);
       this._buttonFeedback.flash(key, "success", 1500);
-    } catch {
+    } catch (err) {
+      this._surfaceActionError(routine.profileId, err, "copy the profile");
       this._buttonFeedback.flash(key, "error");
     }
   }
 
   private async _pasteRoutine(routine: RoutineConfig): Promise<void> {
     const key = `paste-${routine.profileId}`;
+    this._clearActionError(routine.profileId);
     const text = await readRoutineClipboard();
     if (!text) {
+      this._setActionError(
+        routine.profileId,
+        "Nothing to paste — copy a profile first."
+      );
       this._buttonFeedback.flash(key, "error");
       return;
     }
     const payload = parseClipboardPayload(text);
     if (!payload) {
+      this._setActionError(
+        routine.profileId,
+        "The clipboard doesn't contain profile settings."
+      );
       this._buttonFeedback.flash(key, "error");
       return;
     }
@@ -265,6 +277,10 @@ export class RoomClimateProfilesPanel extends LitElement {
       (id, on) => setToggle(this.hass, id, on)
     );
     if (applied === 0) {
+      this._setActionError(
+        routine.profileId,
+        "Nothing in the clipboard matched this room's devices."
+      );
       this._buttonFeedback.flash(key, "error");
       return;
     }
@@ -284,13 +300,34 @@ export class RoomClimateProfilesPanel extends LitElement {
     }
   }
 
+  private _setActionError(profileId: string, message: string): void {
+    this._actionError = { ...this._actionError, [profileId]: message };
+  }
+
+  private _clearActionError(profileId: string): void {
+    if (this._actionError[profileId] === undefined) return;
+    const next = { ...this._actionError };
+    delete next[profileId];
+    this._actionError = next;
+  }
+
+  /** Store a user-readable failure message in the profile's inline error area. */
+  private _surfaceActionError(profileId: string, err: unknown, what: string): void {
+    this._setActionError(
+      profileId,
+      wsErrorMessage(err) || `Could not ${what}. Check Settings → System → Logs.`
+    );
+  }
+
   private async _applyNow(routine: RoutineConfig): Promise<void> {
     const key = `apply-${routine.profileId}`;
     this._busy = true;
+    this._clearActionError(routine.profileId);
     try {
       await wsApplyProfile(this.hass, routine.profileId);
       this._buttonFeedback.flash(key, "success");
-    } catch {
+    } catch (err) {
+      this._surfaceActionError(routine.profileId, err, "apply the profile");
       this._buttonFeedback.flash(key, "error");
     } finally {
       this._busy = false;
@@ -327,11 +364,13 @@ export class RoomClimateProfilesPanel extends LitElement {
       const next = { ...this._renameDrafts };
       delete next[routine.profileId];
       this._renameDrafts = next;
+      this._setActionError(routine.profileId, "Enter a profile name.");
       this._flashField(fieldKey, "error");
       return;
     }
 
     this._busy = true;
+    this._clearActionError(routine.profileId);
     try {
       await wsRenameProfile(this.hass, routine.profileId, name);
       const next = { ...this._renameDrafts };
@@ -339,7 +378,8 @@ export class RoomClimateProfilesPanel extends LitElement {
       this._renameDrafts = next;
       await refreshProfiles(this.hass);
       this._flashField(fieldKey, "success");
-    } catch {
+    } catch (err) {
+      this._surfaceActionError(routine.profileId, err, "rename the profile");
       this._flashField(fieldKey, "error");
     } finally {
       this._busy = false;
@@ -348,7 +388,12 @@ export class RoomClimateProfilesPanel extends LitElement {
 
   private async _setProfileTime(routine: RoutineConfig, newTime: string): Promise<void> {
     const fieldKey = `time-${routine.profileId}`;
+    this._clearActionError(routine.profileId);
     if (findTimeConflict(this.hass, this.roomKey, routine.profileId, newTime)) {
+      this._setActionError(
+        routine.profileId,
+        this._timeConflictMessage(newTime, routine.profileId)
+      );
       this._flashField(fieldKey, "error");
       return;
     }
@@ -357,13 +402,14 @@ export class RoomClimateProfilesPanel extends LitElement {
       await setInputDateTimeTime(this.hass, routine.time, `${newTime}:00`);
       await refreshProfiles(this.hass);
       this._flashField(fieldKey, "success");
-    } catch {
+    } catch (err) {
+      this._surfaceActionError(routine.profileId, err, "change the profile time");
       this._flashField(fieldKey, "error");
     }
   }
 
-  private _timeConflictMessage(time: string): string {
-    const conflict = findTimeConflict(this.hass, this.roomKey, "", time);
+  private _timeConflictMessage(time: string, excludeProfileId = ""): string {
+    const conflict = findTimeConflict(this.hass, this.roomKey, excludeProfileId, time);
     if (!conflict) return "Another profile in this room already uses that time.";
     const label = editableProfileName(conflict.name, conflict.profileId);
     return `“${label}” already runs at ${time} in this room.`;
@@ -427,6 +473,7 @@ export class RoomClimateProfilesPanel extends LitElement {
       return;
     }
     this._busy = true;
+    this._clearActionError(routine.profileId);
     try {
       await wsDeleteProfile(this.hass, routine.profileId);
       const nextOpen = new Set(this._openProfileIds);
@@ -434,7 +481,8 @@ export class RoomClimateProfilesPanel extends LitElement {
       this._openProfileIds = nextOpen;
       await refreshProfiles(this.hass);
       this._buttonFeedback.flash(key, "success", 800);
-    } catch {
+    } catch (err) {
+      this._surfaceActionError(routine.profileId, err, "delete the profile");
       this._buttonFeedback.flash(key, "error");
     } finally {
       this._busy = false;
@@ -567,6 +615,11 @@ export class RoomClimateProfilesPanel extends LitElement {
               { danger: true }
             )}
           </div>
+          ${this._actionError[routine.profileId]
+            ? html`<div class="profile-add-error" role="alert">
+                ${this._actionError[routine.profileId]}
+              </div>`
+            : nothing}
           ${this._renderRoom(routine.room)}
         </div>
       </details>

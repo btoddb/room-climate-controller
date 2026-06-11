@@ -19,8 +19,29 @@ CARD_DIR="${HOME_DIR}/custom_components/room_climate_controller/card"
 COMPONENT_WWW="$(cd "$CARD_DIR/.." && pwd)/www"
 cd "$CARD_DIR"
 
-# --- 1. Bump patch version (package.json) and sync the console banner so you
-#        can confirm in the browser console which build actually loaded. ---
+# --- 1. Install deps first (clean, correct-platform native binaries). This is the
+#        most failure-prone step and does not depend on the version, so running it
+#        before the bump means a network/install failure leaves the tree untouched. ---
+echo "Installing dependencies..."
+npm install
+
+# --- 2. Bump patch version (package.json) and sync the console banner so you can
+#        confirm in the browser console which build actually loaded. The version is
+#        compiled into the bundle, so it must be bumped before the build. Back up the
+#        two touched files and roll them back if the build/deploy fails, so a broken
+#        build never leaves a bumped-but-unbuilt (dirty, inconsistent) tree. ---
+PKG_BACKUP="$(mktemp)"
+IDX_BACKUP="$(mktemp)"
+cp package.json "$PKG_BACKUP"
+cp src/index.ts "$IDX_BACKUP"
+rollback() {
+    echo "ERROR: build/deploy failed — rolling back the version bump." >&2
+    cp "$PKG_BACKUP" package.json
+    cp "$IDX_BACKUP" src/index.ts
+    rm -f "$PKG_BACKUP" "$IDX_BACKUP"
+}
+trap rollback ERR
+
 OLD_VERSION=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
 NEW_VERSION=$(python3 -c "p='${OLD_VERSION}'.split('.'); p[2]=str(int(p[2])+1); print('.'.join(p))")
 python3 - "$NEW_VERSION" <<'PYEOF'
@@ -35,15 +56,17 @@ open("src/index.ts", "w").write(src)
 PYEOF
 echo "Version: $OLD_VERSION -> $NEW_VERSION"
 
-# --- 2. Install deps (clean, correct-platform native binaries) and build. ---
-echo "Installing dependencies..."
-npm install
+# --- 3. Build. ---
 echo "Building..."
 npm run build
 
-# --- 3. Deploy the bundle into the component's www/ directory. ---
+# --- 4. Deploy the bundle into the component's www/ directory. ---
 echo "Deploying to $COMPONENT_WWW ..."
 mkdir -p "$COMPONENT_WWW"
 cp room-climate-control-card.js room-climate-control-card.js.map "$COMPONENT_WWW/"
+
+# Success: drop the rollback trap and discard the backups.
+trap - ERR
+rm -f "$PKG_BACKUP" "$IDX_BACKUP"
 
 echo "Done (v$NEW_VERSION). Hard-refresh your browser (Ctrl+Shift+R) to load the new card."

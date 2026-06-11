@@ -40,6 +40,7 @@ export function getHvacMode(hass: HomeAssistant, entityId: string): string {
   if (!state) return "—";
   const mode = state.attributes.hvac_mode as string | undefined;
   const raw = mode || state.state;
+  if (!raw) return "—";
   return raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -49,6 +50,7 @@ export function getFanMode(hass: HomeAssistant, entityId: string): string {
   if (state.state === "off") return "Off";
   const pct = state.attributes.percentage as number | undefined;
   if (pct != null) return `${pct}%`;
+  if (!state.state) return "—";
   return state.state.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

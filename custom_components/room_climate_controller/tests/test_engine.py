@@ -243,3 +243,114 @@ def test_no_redundant_fan_mode():
         )
     )
     assert not any(isinstance(c, SetFanMode) for c in cmds)
+
+
+def test_split_heater_heats():
+    """Heater-alone (no AC, not combined) drives to HEAT with the heating target."""
+    cmds = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="off", hvac_modes=("off", "heat"), fan_modes=("low", "high")
+            ),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "heat" for c in cmds)
+    assert any(isinstance(c, SetTemperature) and c.temperature == 68 for c in cmds)
+
+
+def test_combined_off_when_uses_disabled():
+    """Combined device with neither use selected turns the climate off, no setpoint."""
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="heat",
+                hvac_modes=("off", "cool", "heat"),
+                fan_modes=("low", "high"),
+            ),
+            use_ac=False,
+            use_heater=False,
+            room_temp=60.0,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds)
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_split_ac_truncates_before_compare():
+    """Comparisons truncate to whole degrees: 72.9 -> 72, so 72 > 72 is False."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high")),
+            use_ac=True,
+            room_temp=72.9,  # truncates to 72, not rounded up to 73
+            target_cooling=72.0,
+        )
+    )
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds)
+
+    # One whole degree warmer (73) does cross the threshold and triggers cooling.
+    cmds_hot = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high")),
+            use_ac=True,
+            room_temp=73.0,
+            target_cooling=72.0,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds_hot)
+
+
+def test_combined_fan_only_uses_cooling_tiers():
+    """Combined FAN_ONLY with AC in use picks cooling fan tiers."""
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="cool",
+                hvac_modes=("off", "cool", "heat", "fan_only"),
+                fan_modes=("low", "high"),
+            ),
+            use_ac=True,
+            use_heater=True,
+            room_temp=72.0,  # within deadband: no cool, no heat
+            target_cooling=75.0,
+            target_heating=68.0,
+            cooling_medium=75.0,
+            cooling_high=78.0,
+            ac_fan_only_override=True,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "fan_only" for c in cmds)
+    # cooling_speed(72, 75, 78) -> "low"
+    assert any(isinstance(c, SetFanMode) and c.fan_mode == "low" for c in cmds)
+
+
+def test_combined_fan_only_heater_only_uses_heating_tiers():
+    """
+    Combined FAN_ONLY with only the heater in use picks heating fan tiers.
+
+    Chosen so heating and cooling tiers diverge: heating_speed(63, 65, 62) -> "medium"
+    while cooling_speed(63, 75, 78) -> "low", proving the heating path is taken.
+    """
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="heat",
+                hvac_modes=("off", "cool", "heat", "fan_only"),
+                fan_modes=("low", "medium", "high"),
+            ),
+            use_ac=False,
+            use_heater=True,
+            room_temp=63.0,  # >= target_heating, so no active heating
+            target_heating=62.0,
+            heating_medium=65.0,
+            heating_high=62.0,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "fan_only" for c in cmds)
+    assert any(isinstance(c, SetFanMode) and c.fan_mode == "medium" for c in cmds)

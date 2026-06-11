@@ -32,3 +32,25 @@ jobs:
 
       - name: Format
         run: python3 -m ruff format . --check
+
+  tests:
+    name: "Pytest"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      # The engine tests are HA-free by design (see tests/test_engine.py), so
+      # install only pytest — pulling in the full requirements.txt costs
+      # minutes per run for the homeassistant tree the tests never import.
+      - name: Install pytest
+        run: python3 -m pip install "$(grep '^pytest==' requirements.txt)"
+
+      - name: Run engine tests
+        run: python3 -m pytest custom_components/room_climate_controller/tests/

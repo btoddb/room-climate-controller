@@ -1,6 +1,11 @@
 import { html, nothing, type TemplateResult } from "lit";
 import type { HomeAssistant } from "./ha-types";
-import { entityConfigured, formatSensorValue, getStateObj } from "./helpers";
+import {
+  entityConfigured,
+  formatSensorValue,
+  getStateObj,
+  setInputNumber,
+} from "./helpers";
 import type { DeviceSettingsButton, RoomClimateControlConfig } from "./types";
 
 export interface DeviceSettingsFields {
@@ -67,13 +72,6 @@ export function buildDeviceSettingsFields(
   }
 
   return sections;
-}
-
-function setInputNumber(hass: HomeAssistant, entityId: string, value: number): void {
-  void hass.callService(entityId.split(".")[0], "set_value", {
-    entity_id: entityId,
-    value,
-  });
 }
 
 function renderTargetRow(

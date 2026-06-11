@@ -319,7 +319,7 @@ def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
             out.add(SetFanMode(ac.entity_id, matched))
 
 
-def _combined_speed_label(inp: EngineInputs, decision: str) -> str:  # noqa: PLR0911
+def _combined_speed_label(inp: EngineInputs, decision: str) -> str:
     """Pick cooling vs heating tiers for the combined climate fan."""
     if decision == HEAT:
         return heating_speed(inp.room_temp, inp.heating_medium, inp.heating_high)[0]
@@ -328,10 +328,7 @@ def _combined_speed_label(inp: EngineInputs, decision: str) -> str:  # noqa: PLR
     if decision == FAN_ONLY:
         if inp.use_heater and not inp.use_ac:
             return heating_speed(inp.room_temp, inp.heating_medium, inp.heating_high)[0]
-        if inp.use_ac:
-            return cooling_speed(inp.room_temp, inp.cooling_medium, inp.cooling_high)[0]
-        if inp.use_heater:
-            return heating_speed(inp.room_temp, inp.heating_medium, inp.heating_high)[0]
+        # use_ac, or neither use selected: fall back to cooling tiers.
         return cooling_speed(inp.room_temp, inp.cooling_medium, inp.cooling_high)[0]
     return "low"
 

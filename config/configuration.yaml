@@ -10,3 +10,4 @@ logger:
   default: info
   logs:
     custom_components.room_climate_card: debug
+    custom_components.dreo: warn

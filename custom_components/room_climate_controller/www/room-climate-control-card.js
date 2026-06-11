@@ -197,15 +197,10 @@ const ce=e=>(t,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(e,t)}
     pointer-events: none;
   }
 
-  /* Window status banner shown above Manual Mode (UX-26). */
+  /* Window status banner shown above Manual Mode (UX-26).
+     Layout/padding/border come from .device-row; only color varies. */
   .window-status-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 0.85rem;
     color: var(--secondary-text-color);
-    border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
   }
 
   .window-status-row.window-status-open {
@@ -505,9 +500,9 @@ const ce=e=>(t,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(e,t)}
           </div>
         </div>
       `)},n=_e(e.ac_entity)&&_e(e.heater_entity)&&e.ac_entity===e.heater_entity;if(r("Cooling",e.ac_entity,e.use_ac,e.target_cooling,ye,e.ac_fan_only_override,i),r("Heating",e.heater_entity,e.use_heater,e.target_heating,ye,n?void 0:e.heater_fan_only_override,i),r("Fan",e.fan_entity,e.use_fan,e.target_fan,be),0===t.length)return K;_e(e.window_sensor)&&t.push(L`
-        <div class="window-status-row ${i?"window-status-open":""}">
-          <span class="window-status-icon">🪟</span>
-          <span class="window-status-text"
+        <div class="device-row window-status-row ${i?"window-status-open":""}">
+          <span>🪟</span>
+          <span class="device-label"
             >${i?"A window is open":"Windows are closed"}</span
           >
         </div>
@@ -1063,5 +1058,5 @@ const ot=2;let st=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
           ${0===e.length?L`<div class="profile-hint">No profiles for this room yet.</div>`:ft(e,e=>e.profileId,e=>this._renderProfile(e))}
         </div>
       </details>
-    `}static get styles(){return It}};e([pe({attribute:!1})],Ft.prototype,"hass",void 0),e([pe({attribute:!1})],Ft.prototype,"config",void 0),e([pe({attribute:!1})],Ft.prototype,"roomKey",void 0),e([ue()],Ft.prototype,"_profilesOpen",void 0),e([ue()],Ft.prototype,"_busy",void 0),e([ue()],Ft.prototype,"_newProfileName",void 0),e([ue()],Ft.prototype,"_newProfileTime",void 0),e([ue()],Ft.prototype,"_showAddForm",void 0),e([ue()],Ft.prototype,"_addError",void 0),e([ue()],Ft.prototype,"_actionError",void 0),e([ue()],Ft.prototype,"_renameDrafts",void 0),e([ue()],Ft.prototype,"_feedbackVersion",void 0),e([ue()],Ft.prototype,"_fieldFeedback",void 0),e([ue()],Ft.prototype,"_openProfileIds",void 0),e([ue()],Ft.prototype,"_focusTarget",void 0),e([ue()],Ft.prototype,"_focusAddName",void 0),e([ue()],Ft.prototype,"_pasteRoomSettingsOnCreate",void 0),Ft=e([ce("room-climate-profiles-panel")],Ft),window.customCards=window.customCards||[],window.customCards.push({type:"room-climate-control",name:"Room Climate Control",description:"Per-room climate dashboard card wired to a room's backend helpers and devices.",preview:!0}),console.info("%c ROOM-CLIMATE-CONTROL %c v1.4.41 ","color: white; background: #0288d1; font-weight: 700;","color: #0288d1; background: white; font-weight: 700;");
+    `}static get styles(){return It}};e([pe({attribute:!1})],Ft.prototype,"hass",void 0),e([pe({attribute:!1})],Ft.prototype,"config",void 0),e([pe({attribute:!1})],Ft.prototype,"roomKey",void 0),e([ue()],Ft.prototype,"_profilesOpen",void 0),e([ue()],Ft.prototype,"_busy",void 0),e([ue()],Ft.prototype,"_newProfileName",void 0),e([ue()],Ft.prototype,"_newProfileTime",void 0),e([ue()],Ft.prototype,"_showAddForm",void 0),e([ue()],Ft.prototype,"_addError",void 0),e([ue()],Ft.prototype,"_actionError",void 0),e([ue()],Ft.prototype,"_renameDrafts",void 0),e([ue()],Ft.prototype,"_feedbackVersion",void 0),e([ue()],Ft.prototype,"_fieldFeedback",void 0),e([ue()],Ft.prototype,"_openProfileIds",void 0),e([ue()],Ft.prototype,"_focusTarget",void 0),e([ue()],Ft.prototype,"_focusAddName",void 0),e([ue()],Ft.prototype,"_pasteRoomSettingsOnCreate",void 0),Ft=e([ce("room-climate-profiles-panel")],Ft),window.customCards=window.customCards||[],window.customCards.push({type:"room-climate-control",name:"Room Climate Control",description:"Per-room climate dashboard card wired to a room's backend helpers and devices.",preview:!0}),console.info("%c ROOM-CLIMATE-CONTROL %c v1.4.42 ","color: white; background: #0288d1; font-weight: 700;","color: #0288d1; background: white; font-weight: 700;");
 //# sourceMappingURL=room-climate-control-card.js.map

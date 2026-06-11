@@ -9,6 +9,7 @@ services.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
@@ -16,6 +17,8 @@ from homeassistant.config_entries import ConfigEntry
 from .const import SUBENTRY_TYPE_ROOM
 from .models import Profile, Room, format_profile_id
 from .store import ProfileStore
+
+_LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -49,12 +52,21 @@ class RoomClimateHub:
 
     def rebuild_rooms(self) -> None:
         """(Re)build the room map from the entry's room subentries."""
+        old = self.rooms
         rooms: dict[str, Room] = {}
         for subentry_id, subentry in self.entry.subentries.items():
             if subentry.subentry_type != SUBENTRY_TYPE_ROOM:
                 continue
             room = Room.from_subentry(subentry_id, subentry.data)
             rooms[room.key] = room
+            if room.key not in old:
+                _LOGGER.info("[room=%s] Room created: '%s'", room.key, room.label)
+            elif old[room.key] != room:
+                _LOGGER.info(
+                    "[room=%s] Room settings changed: '%s'", room.key, room.label
+                )
+        for key in set(old) - set(rooms):
+            _LOGGER.info("[room=%s] Room removed: '%s'", key, old[key].label)
         self.rooms = rooms
 
     async def async_save(self) -> None:

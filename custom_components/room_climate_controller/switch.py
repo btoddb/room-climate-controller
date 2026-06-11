@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -28,6 +29,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from .hub import RoomClimateConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -153,6 +156,16 @@ class RoomSwitch(_BaseRestoreSwitch):
         self._attr_icon = spec.icon
         self._attr_is_on = spec.default_on
         self._attr_device_info = room_device_info(entry, room)
+        self._room_key = room.key
+
+    @callback
+    def _on_change(self) -> None:
+        _LOGGER.info(
+            "[room=%s] Toggle '%s' → %s",
+            self._room_key,
+            self._attr_name,
+            "on" if self._attr_is_on else "off",
+        )
 
 
 class _BaseProfileSwitch(ProfileRemovalMixin, _BaseRestoreSwitch):
@@ -197,6 +210,28 @@ class ProfileEnabledSwitch(_BaseProfileSwitch):
         self._attr_icon = profile.icon
         self._attr_is_on = profile.enabled
 
+    async def async_turn_on(self, **_kwargs: Any) -> None:
+        """Enable profile schedule."""
+        await super().async_turn_on(**_kwargs)
+        profile = self._entry.runtime_data.get_profile(self._profile_id)
+        room_key = profile.room if profile else "unknown"
+        _LOGGER.info(
+            "[room=%s profile=%s] Profile schedule enabled",
+            room_key,
+            self._profile_id,
+        )
+
+    async def async_turn_off(self, **_kwargs: Any) -> None:
+        """Disable profile schedule."""
+        await super().async_turn_off(**_kwargs)
+        profile = self._entry.runtime_data.get_profile(self._profile_id)
+        room_key = profile.room if profile else "unknown"
+        _LOGGER.info(
+            "[room=%s profile=%s] Profile schedule disabled",
+            room_key,
+            self._profile_id,
+        )
+
     @callback
     def _apply_to_profile(self, profile: Profile) -> None:
         profile.enabled = bool(self._attr_is_on)
@@ -223,6 +258,30 @@ class ProfileUseSwitch(_BaseProfileSwitch):
         preset = profile.presets.get(device)
         self._attr_is_on = bool(preset.use) if preset else False
 
+    async def async_turn_on(self, **_kwargs: Any) -> None:
+        """Enable device preset."""
+        await super().async_turn_on(**_kwargs)
+        profile = self._entry.runtime_data.get_profile(self._profile_id)
+        room_key = profile.room if profile else "unknown"
+        _LOGGER.info(
+            "[room=%s profile=%s] Profile preset edited: %s use → on",
+            room_key,
+            self._profile_id,
+            self._device,
+        )
+
+    async def async_turn_off(self, **_kwargs: Any) -> None:
+        """Disable device preset."""
+        await super().async_turn_off(**_kwargs)
+        profile = self._entry.runtime_data.get_profile(self._profile_id)
+        room_key = profile.room if profile else "unknown"
+        _LOGGER.info(
+            "[room=%s profile=%s] Profile preset edited: %s use → off",
+            room_key,
+            self._profile_id,
+            self._device,
+        )
+
     @callback
     def _apply_to_profile(self, profile: Profile) -> None:
         preset = profile.presets.get(self._device)
@@ -242,6 +301,28 @@ class ProfileFanOverrideSwitch(_BaseProfileSwitch):
         self._attr_name = "Fan-only override"
         self._attr_icon = "mdi:fan-auto"
         self._attr_is_on = profile.fan_override
+
+    async def async_turn_on(self, **_kwargs: Any) -> None:
+        """Enable fan-only override preset."""
+        await super().async_turn_on(**_kwargs)
+        profile = self._entry.runtime_data.get_profile(self._profile_id)
+        room_key = profile.room if profile else "unknown"
+        _LOGGER.info(
+            "[room=%s profile=%s] Profile preset edited: fan-only override → on",
+            room_key,
+            self._profile_id,
+        )
+
+    async def async_turn_off(self, **_kwargs: Any) -> None:
+        """Disable fan-only override preset."""
+        await super().async_turn_off(**_kwargs)
+        profile = self._entry.runtime_data.get_profile(self._profile_id)
+        room_key = profile.room if profile else "unknown"
+        _LOGGER.info(
+            "[room=%s profile=%s] Profile preset edited: fan-only override → off",
+            room_key,
+            self._profile_id,
+        )
 
     @callback
     def _apply_to_profile(self, profile: Profile) -> None:

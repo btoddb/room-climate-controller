@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import time
 from typing import TYPE_CHECKING
 
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from .hub import RoomClimateConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -83,9 +86,20 @@ class ProfileTime(ProfileRemovalMixin, TimeEntity, RestoreEntity):
 
     async def async_set_value(self, value: time) -> None:
         """Set a new schedule time."""
+        old = self._attr_native_value
         self._attr_native_value = value
         self.async_write_ha_state()
         self._sync_to_store()
+        if old != value:
+            profile = self._entry.runtime_data.get_profile(self._profile_id)
+            if profile is not None:
+                _LOGGER.info(
+                    "[room=%s profile=%s] Profile schedule time → %02d:%02d",
+                    profile.room,
+                    self._profile_id,
+                    value.hour,
+                    value.minute,
+                )
 
     @callback
     def _sync_to_store(self) -> None:

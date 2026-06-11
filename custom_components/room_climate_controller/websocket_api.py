@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 from typing import TYPE_CHECKING
 
 import voluptuous as vol
@@ -54,6 +55,8 @@ from .models import (
 
 if TYPE_CHECKING:
     from .hub import RoomClimateConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @callback
@@ -307,6 +310,9 @@ async def ws_create_profile(
 
     hub.profiles.append(profile)
     await hub.async_save()
+    _LOGGER.info(
+        "[room=%s profile=%s] Profile created: '%s'", room.key, profile.id, profile.name
+    )
     async_dispatcher_send(hass, SIGNAL_ADD_PROFILE_ENTITIES, profile)
     if hub.scheduler:
         hub.scheduler.async_refresh()
@@ -342,6 +348,9 @@ async def ws_delete_profile(
 
     hub.profiles = [p for p in hub.profiles if p.id != pid]
     await hub.async_save()
+    _LOGGER.info(
+        "[room=%s profile=%s] Profile deleted: '%s'", profile.room, pid, profile.name
+    )
     async_dispatcher_send(hass, SIGNAL_REMOVE_PROFILE, pid)
     _remove_profile_device(hass, entry, pid)
     if hub.scheduler:
@@ -379,8 +388,16 @@ async def ws_rename_profile(
         )
         return
 
+    old_name = profile.name
     profile.name = name
     await hub.async_save()
+    _LOGGER.info(
+        "[room=%s profile=%s] Profile renamed: '%s' → '%s'",
+        profile.room,
+        pid,
+        old_name,
+        name,
+    )
     dev_reg = dr.async_get(hass)
     device = dev_reg.async_get_device(
         identifiers={(DOMAIN, f"{entry.entry_id}_profile_{pid}")}

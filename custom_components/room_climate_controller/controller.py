@@ -169,10 +169,12 @@ class RoomController:
             )
 
     def _tracked_ids(self) -> frozenset[str]:
-        """Temp sensor plus whichever room live entities currently resolve."""
+        """Temp/humidity sensors plus whichever room live entities currently resolve."""
         ids: set[str] = set()
         if self.room.temperature_sensor:
             ids.add(self.room.temperature_sensor)
+        if self.room.humidity_sensor:
+            ids.add(self.room.humidity_sensor)
         ids.update(self.room.window_sensors)
         for device in self.room.devices:
             for key in (
@@ -190,7 +192,28 @@ class RoomController:
         return frozenset(ids)
 
     @callback
-    def _on_change(self, _event: Event[EventStateChangedData]) -> None:
+    def _on_change(self, event: Event[EventStateChangedData]) -> None:
+        data = event.data
+        entity_id: str = data["entity_id"]
+        old = data["old_state"]
+        new = data["new_state"]
+        old_val = old.state if old else None
+        new_val = new.state if new else None
+        if old_val != new_val:
+            if entity_id == self.room.temperature_sensor:
+                _LOGGER.info(
+                    "[room=%s] Temperature changed: %s → %s°F",
+                    self.room.key,
+                    old_val,
+                    new_val,
+                )
+            elif entity_id == self.room.humidity_sensor:
+                _LOGGER.info(
+                    "[room=%s] Humidity changed: %s → %s%%",
+                    self.room.key,
+                    old_val,
+                    new_val,
+                )
         self._resubscribe()
         self.async_request_run()
 

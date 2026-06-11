@@ -41,11 +41,27 @@ async def async_apply_profile(
             hass, entry.entry_id, room.key, KEY_MANUAL_MODE, "switch"
         )
         if manual and hass.states.is_state(manual, STATE_ON):
-            _LOGGER.debug(
-                "Profile %s: skipped, %s in manual mode", profile.id, room.key
+            _LOGGER.info(
+                "[room=%s profile=%s] Profile '%s' skipped: manual mode active",
+                room.key,
+                profile.id,
+                profile.name,
             )
             return
 
+    settings = ", ".join(
+        f"{device} {'on' if p.use else 'off'}@{int(p.temp)}°F"
+        for device in room.devices
+        if (p := profile.presets.get(device)) is not None
+    )
+    _LOGGER.info(
+        "[room=%s profile=%s] Profile '%s' applied (%s): %s",
+        room.key,
+        profile.id,
+        profile.name,
+        "explicit" if force else "scheduled",
+        settings or "no presets",
+    )
     for device in room.devices:
         preset = profile.presets.get(device)
         if preset is None:

@@ -1,6 +1,6 @@
 # Logging
 
-**Status:** in progress
+**Status:** shipped — folded into [requirements/spec/logging.md](../spec/logging.md)
 **Touches:** Backend code, no UI
 
 ## Goal
@@ -9,30 +9,24 @@ Currently there isn't a good way to troubleshoot Room Climate Controller (RCC). 
 
 ## Behavior
 
-Numbered, testable statements. Mark each as a **constraint** (must) or
-**suggestion** (open to alternatives) when it isn't obvious.
+**constraint** the log message should be formatted such that I can easily filter using HA's log viewer.  Specifically I should be able to easily see all messages logged by room climate controller.  I should also be able to limit the messages to a specific room, sensor, device, etc.
 
-**suggestion** the log message should look something like this.
-
-Log messages on these events:
+Log messages on these events at INFO level:
 1. **constraint** if RCC notices a room's temperature changes
 2. **constraint** if RCC notices a room's humidity changes
-3. **constraint** when a profile is activated or applied
+3. **constraint** when a profile is edited, activated, or applied, log the settings
 4. **constraint** when a toggle is changed
-6. **constraint** when a new room is created, it's devices  are changed, or any settings are changed
+6. **constraint** when a new room is created, it's devices are changed, or any settings are changed
+7. **suggestion** add any other logs you think I missed
 
 ## UI (only if applicable)
 
-What changes on the card / dialogs. Reference existing UX rules by ID where relevant.
+No changes to the card
 
 ## Out of scope
 
-What this explicitly does *not* change, to prevent scope creep.
+Logging UI events
 
 ## Acceptance criteria
 
-How we'll know it's done — concrete checks (engine test cases, a behavior to
-observe in the running app, etc.).
-
-- [ ] …
-- [ ] …
+I'm able to see over time how a room's climate controller behaves.  Get a clear picture of what is causing devices to turn on/off.

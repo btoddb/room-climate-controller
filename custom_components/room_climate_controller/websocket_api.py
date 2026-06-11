@@ -144,9 +144,10 @@ def _serialize_room(
             "ac_entity": room.ac_climate if room.has_ac else None,
             "heater_entity": room.heater_climate if room.has_heater else None,
             "fan_entity": room.fan_entity if room.has_fan else None,
-            # Optional window contact the card reads directly from hass.states to
-            # disable cooling/heating Use toggles while open (UX-26); None if unset.
-            "window_sensor": room.window_sensor,
+            # Optional window contacts the card reads directly from hass.states to
+            # disable cooling/heating Use toggles while any is open (UX-26); [] if
+            # none configured.
+            "window_sensors": list(room.window_sensors),
             # Optional per-device "lights & sound" tap_action buttons; the card
             # renders these in each device's settings dialog.
             "ac_device_button": room.ac_device_button if room.has_ac else None,

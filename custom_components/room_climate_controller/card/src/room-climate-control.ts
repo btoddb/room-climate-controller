@@ -223,7 +223,7 @@ export class RoomClimateControl extends LitElement {
     const rows: TemplateResult[] = [];
     // Open window suppresses cooling/heating (CC-20); the Use toggles for those
     // devices are disabled while open (UX-26). Fan-only override stays live.
-    const winOpen = windowOpen(this.hass, c.window_sensor);
+    const winOpen = windowOpen(this.hass, c.window_sensors);
 
     const addDevice = (
       label: string,
@@ -327,8 +327,8 @@ export class RoomClimateControl extends LitElement {
 
     if (rows.length === 0) return nothing;
 
-    if (entityConfigured(c.window_sensor)) {
-      rows.push(html`
+    if ((c.window_sensors ?? []).length > 0) {
+      rows.unshift(html`
         <div class="device-row window-status-row ${winOpen ? "window-status-open" : ""}">
           <span>🪟</span>
           <span class="device-label"

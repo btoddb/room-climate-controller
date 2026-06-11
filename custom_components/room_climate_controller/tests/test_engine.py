@@ -45,6 +45,7 @@ from rc_pure.engine import (  # noqa: E402
     SetTemperature,
     SwitchInfo,
     SwitchTurnOn,
+    any_window_open,
     compute_commands,
 )
 
@@ -515,3 +516,31 @@ def test_window_open_heater_native_fan_only():
     )
     assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "fan_only" for c in cmds)
     assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "heat" for c in cmds)
+
+
+# --- multi-window aggregation + fail-safe (CC-20 / CC-21) -------------------
+def test_no_window_sensors_is_closed():
+    """CC-21: a room with no window sensors is never "open"."""
+    assert any_window_open(()) is False
+
+
+def test_single_window_open_and_closed():
+    """CC-20: one sensor — open when "on", closed otherwise."""
+    assert any_window_open(("on",)) is True
+    assert any_window_open(("off",)) is False
+
+
+def test_two_windows_aggregate_any_open():
+    """CC-20: with two sensors the room is open if EITHER reads "on"."""
+    assert any_window_open(("off", "off")) is False  # both closed
+    assert any_window_open(("on", "on")) is True  # both open
+    assert any_window_open(("off", "on")) is True  # one open
+    assert any_window_open(("on", "off")) is True  # one open (order-independent)
+
+
+def test_window_failsafe_bad_states_are_closed():
+    """CC-21: missing/unavailable/unknown readings are treated as closed."""
+    assert any_window_open((None,)) is False
+    assert any_window_open(("unavailable", "unknown")) is False
+    # A good "on" still wins even when another sensor is unavailable.
+    assert any_window_open(("unavailable", "on")) is True

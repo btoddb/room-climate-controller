@@ -38,6 +38,7 @@ from .engine import (
     SwitchTurnOff,
     SwitchTurnOn,
     TurnOffClimate,
+    any_window_open,
     compute_commands,
 )
 from .models import Room, room_uid
@@ -172,8 +173,7 @@ class RoomController:
         ids: set[str] = set()
         if self.room.temperature_sensor:
             ids.add(self.room.temperature_sensor)
-        if self.room.window_sensor:
-            ids.add(self.room.window_sensor)
+        ids.update(self.room.window_sensors)
         for device in self.room.devices:
             for key in (
                 KEY_USE[device],
@@ -311,12 +311,14 @@ class RoomController:
         return default
 
     def _window_open(self) -> bool:
-        """Window open == sensor "on". Missing/unavailable/unknown == closed (CC-21)."""
-        eid = self.room.window_sensor
-        if not eid:
-            return False
-        state = self.hass.states.get(eid)
-        return state is not None and state.state == STATE_ON
+        """
+        Return True if ANY of the room's window sensors reads open (CC-20).
+
+        Missing/unavailable/unknown sensors are treated as closed (CC-21); the
+        aggregation + fail-safe live in the pure engine helper.
+        """
+        states = (self.hass.states.get(eid) for eid in self.room.window_sensors)
+        return any_window_open(s.state if s else None for s in states)
 
     def _climate_info(self, entity_id: str | None) -> ClimateInfo | None:
         if not entity_id:

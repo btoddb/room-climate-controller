@@ -29,6 +29,7 @@ Spec files:
 ## How changes flow
 
 1. New work starts as a file in `proposals/` (from `TEMPLATE.md`) or directly in chat for small things.
+1. Shipped means that the proposal's **Status:** is set to shipped
 2. When it ships, its behavior is **folded into the relevant `spec/` file** (update the rules, bump/add IDs) and the proposal file is **deleted**. Git history preserves it.
 3. The spec never accumulates "we used to…" prose. If behavior is gone, the rule is gone.
 

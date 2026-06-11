@@ -40,6 +40,7 @@ from .const import (
     CONF_POWER_SENSOR,
     CONF_ROOM_KEY,
     CONF_TEMPERATURE_SENSOR,
+    CONF_WINDOW_SENSOR,
     DEFAULT_COMMAND_DELAY,
     DEFAULT_LIMITS,
     DEFAULT_POWER_ON_DELAY,
@@ -121,6 +122,7 @@ class Room:
     temperature_sensor: str | None
     humidity_sensor: str | None
     power_sensor: str | None
+    window_sensor: str | None
     ac_fan_only: bool
     heater_fan_only: bool
     limits: dict[str, dict[str, float]]
@@ -169,6 +171,7 @@ class Room:
             temperature_sensor=data.get(CONF_TEMPERATURE_SENSOR) or None,
             humidity_sensor=data.get(CONF_HUMIDITY_SENSOR) or None,
             power_sensor=data.get(CONF_POWER_SENSOR) or None,
+            window_sensor=data.get(CONF_WINDOW_SENSOR) or None,
             ac_fan_only=bool(data.get(CONF_AC_FAN_ONLY, False)),
             heater_fan_only=bool(data.get(CONF_HEATER_FAN_ONLY, False)),
             limits=limits,

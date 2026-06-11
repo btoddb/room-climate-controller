@@ -64,6 +64,7 @@ export function resolveRoomConfig(
     ac_entity: e.ac_entity ?? "",
     heater_entity: e.heater_entity ?? "",
     fan_entity: e.fan_entity ?? "",
+    window_sensor: e.window_sensor ?? "",
     manual_mode: e.manual_mode ?? "",
     ac_fan_only_override: e.ac_fan_only_override ?? "",
     heater_fan_only_override: e.heater_fan_only_override ?? "",

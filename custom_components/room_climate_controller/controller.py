@@ -172,6 +172,8 @@ class RoomController:
         ids: set[str] = set()
         if self.room.temperature_sensor:
             ids.add(self.room.temperature_sensor)
+        if self.room.window_sensor:
+            ids.add(self.room.window_sensor)
         for device in self.room.devices:
             for key in (
                 KEY_USE[device],
@@ -273,6 +275,7 @@ class RoomController:
             fan_high=target_fan + fan_high,
             command_delay_ms=int(room.command_delay * 1000),
             power_on_delay_ms=int(room.power_on_delay * 1000),
+            window_open=self._window_open(),
         )
 
     # -- state readers -------------------------------------------------------
@@ -306,6 +309,14 @@ class RoomController:
         if eid and (state := self.hass.states.get(eid)):
             return state.state == STATE_ON
         return default
+
+    def _window_open(self) -> bool:
+        """Window open == sensor "on". Missing/unavailable/unknown == closed (CC-21)."""
+        eid = self.room.window_sensor
+        if not eid:
+            return False
+        state = self.hass.states.get(eid)
+        return state is not None and state.state == STATE_ON
 
     def _climate_info(self, entity_id: str | None) -> ClimateInfo | None:
         if not entity_id:

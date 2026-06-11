@@ -72,6 +72,7 @@
             "temperature_sensor": "Temperature sensor",
             "humidity_sensor": "Humidity sensor (optional)",
             "power_sensor": "Power sensor (optional)",
+            "window_sensor": "Window sensor (optional, suppresses heating/cooling while open)",
             "cooling_min": "Cooling minimum (°F)",
             "cooling_max": "Cooling maximum (°F)",
             "heating_min": "Heating minimum (°F)",

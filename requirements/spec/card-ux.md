@@ -26,6 +26,7 @@ hand-edit the generated `www/` bundle.
   - **Fan Ovr** toggle (label "Fan Ovr") — only for fan-capable heating/cooling devices; placed left of the Use toggle; editable (CC-12).
   - **Use** toggle (editable).
 - **UX-10** A **Manual Mode** row aligned so its toggle lines up vertically with the Use toggles. Since manual mode has no device, it's labeled "Manual Mode" on the left.
+- **UX-26** When the room's **window sensor** reads open (CC-20), the **Cooling** and **Heating** Use toggles are visibly disabled (dimmed, non-interactive) — their displayed state is preserved, not cleared. A status banner above Manual Mode always shows the window state when a sensor is configured: **"A window is open"** (warning color) while open, **"Windows are closed"** (secondary color) when closed. The settings-dialog target/offset inputs, the Fan section, Fan Ovr toggles, Manual Mode, and all Profiles actions stay interactive while the window is open.
 - **UX-11** Below the device sections: **Settings**, **Energy**, and **History** buttons.
 
 ## Settings dialog

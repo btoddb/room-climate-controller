@@ -25,6 +25,7 @@ import {
   getHvacMode,
   getStateObj,
   getTargetTemp,
+  windowOpen,
 } from "./helpers";
 import { cardStyles } from "./styles";
 import { getRoomsSync, refreshProfiles, subscribeProfiles } from "./profiles/store";
@@ -220,6 +221,9 @@ export class RoomClimateControl extends LitElement {
 
   private _renderDevicesPanel(c: RoomClimateControlConfig) {
     const rows: TemplateResult[] = [];
+    // Open window suppresses cooling/heating (CC-20); the Use toggles for those
+    // devices are disabled while open (UX-26). Fan-only override stays live.
+    const winOpen = windowOpen(this.hass, c.window_sensor);
 
     const addDevice = (
       label: string,
@@ -227,7 +231,8 @@ export class RoomClimateControl extends LitElement {
       useToggle: string,
       targetHelper: string,
       modeFn: (hass: HomeAssistant, id: string) => string,
-      fanOnlyOverrideToggle?: string
+      fanOnlyOverrideToggle?: string,
+      suppressed = false
     ) => {
       if (!entityConfigured(deviceEntity) || !entityAvailable(this.hass, deviceEntity)) {
         return;
@@ -282,7 +287,13 @@ export class RoomClimateControl extends LitElement {
               : html`<div class="toggle-spacer" aria-hidden="true"></div>`}
             <div class="use-toggle">
               <span class="use-label">Use</span>
-              <ha-entity-toggle .hass=${this.hass} .stateObj=${useState}></ha-entity-toggle>
+              <div
+                class=${suppressed ? "rcc-suppressed" : ""}
+                aria-disabled=${suppressed ? "true" : nothing}
+                title=${suppressed ? "Disabled while the window is open" : nothing}
+              >
+                <ha-entity-toggle .hass=${this.hass} .stateObj=${useState}></ha-entity-toggle>
+              </div>
             </div>
           </div>
         </div>
@@ -294,18 +305,38 @@ export class RoomClimateControl extends LitElement {
       entityConfigured(c.heater_entity) &&
       c.ac_entity === c.heater_entity;
 
-    addDevice("Cooling", c.ac_entity, c.use_ac, c.target_cooling, getHvacMode, c.ac_fan_only_override);
+    addDevice(
+      "Cooling",
+      c.ac_entity,
+      c.use_ac,
+      c.target_cooling,
+      getHvacMode,
+      c.ac_fan_only_override,
+      winOpen
+    );
     addDevice(
       "Heating",
       c.heater_entity,
       c.use_heater,
       c.target_heating,
       getHvacMode,
-      sharedClimateDevice ? undefined : c.heater_fan_only_override
+      sharedClimateDevice ? undefined : c.heater_fan_only_override,
+      winOpen
     );
     addDevice("Fan", c.fan_entity, c.use_fan, c.target_fan, getFanMode);
 
     if (rows.length === 0) return nothing;
+
+    if (entityConfigured(c.window_sensor)) {
+      rows.push(html`
+        <div class="window-status-row ${winOpen ? "window-status-open" : ""}">
+          <span class="window-status-icon">🪟</span>
+          <span class="window-status-text"
+            >${winOpen ? "A window is open" : "Windows are closed"}</span
+          >
+        </div>
+      `);
+    }
 
     const manualState = getStateObj(this.hass, c.manual_mode);
     if (manualState) {

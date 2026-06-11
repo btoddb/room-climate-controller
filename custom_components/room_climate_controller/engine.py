@@ -94,6 +94,9 @@ class EngineInputs:
     fan_high: float
     command_delay_ms: int
     power_on_delay_ms: int
+    # window sensor: True when the room's window is open. Suppresses active
+    # cooling/heating (Cool/Heat) only — fan-only circulation is unaffected.
+    window_open: bool = False
 
     # derived helpers ----------------------------------------------------
     @property
@@ -261,8 +264,10 @@ def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
     ac = inp.ac
     assert ac is not None
     room = int(inp.room_temp)
-    needs_cool = inp.use_ac and room > int(inp.target_cooling)
-    needs_heat = inp.use_heater and room < int(inp.target_heating)
+    needs_cool = inp.use_ac and not inp.window_open and room > int(inp.target_cooling)
+    needs_heat = (
+        inp.use_heater and not inp.window_open and room < int(inp.target_heating)
+    )
     uses_disabled = not inp.use_ac and not inp.use_heater
     ac_override_fan_only = (
         inp.ac_fan_only_override
@@ -284,9 +289,9 @@ def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
 
     if uses_disabled and not use_fan_only:
         decision = OFF
-    elif inp.use_ac and room > int(inp.target_cooling):
+    elif needs_cool:
         decision = COOL
-    elif inp.use_heater and room < int(inp.target_heating):
+    elif needs_heat:
         decision = HEAT
     elif use_fan_only:
         decision = FAN_ONLY
@@ -339,7 +344,11 @@ def _combined_speed_label(inp: EngineInputs, decision: str) -> str:
 def _split_ac(inp: EngineInputs, out: _Out) -> None:
     ac = inp.ac
     assert ac is not None
-    needs_cool = inp.use_ac and int(inp.room_temp) > int(inp.target_cooling)
+    needs_cool = (
+        inp.use_ac
+        and not inp.window_open
+        and int(inp.room_temp) > int(inp.target_cooling)
+    )
     override_fan_only = (
         inp.ac_fan_only_override
         and ac.has_fan
@@ -388,7 +397,11 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
 def _split_heater(inp: EngineInputs, out: _Out) -> None:
     heater = inp.heater
     assert heater is not None
-    needs_heat = inp.use_heater and int(inp.room_temp) < int(inp.target_heating)
+    needs_heat = (
+        inp.use_heater
+        and not inp.window_open
+        and int(inp.room_temp) < int(inp.target_heating)
+    )
     native_fan_only = inp.use_heater and not needs_heat and heater.has_fan
     override_fan_only = (
         inp.heater_fan_only_override

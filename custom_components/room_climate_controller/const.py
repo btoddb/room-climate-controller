@@ -71,6 +71,10 @@ CONF_TEMPERATURE_SENSOR: Final = "temperature_sensor"
 CONF_HUMIDITY_SENSOR: Final = "humidity_sensor"
 CONF_POWER_SENSOR: Final = "power_sensor"
 
+# Optional per-room window contact (binary_sensor). When "on" (open), the engine
+# suppresses active cooling/heating; fan-only circulation is unaffected (CC-20).
+CONF_WINDOW_SENSOR: Final = "window_sensor"
+
 # Hub-level outdoor temperature source, mirrored into one abstraction sensor.
 # Optional: if unset, no outdoor-temperature mirror is created.
 CONF_OUTDOOR_SENSOR: Final = "outdoor_sensor"

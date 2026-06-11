@@ -52,6 +52,7 @@ class ClimateInfo:
     fan_modes: tuple[str, ...]
     min_temp: float | None
     supports_set_temp: bool
+    current_setpoint: float | None = None
 
     @property
     def has_fan(self) -> bool:
@@ -327,17 +328,20 @@ def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
             Delay(inp.command_delay_ms),
             TurnOffClimate(ac.entity_id),
         )
-    if decision != OFF and ac.supports_set_temp:
+    if (
+        decision != OFF
+        and ac.supports_set_temp
+        and (ac.current_setpoint is None or ac.current_setpoint != target)
+    ):
         out.add(SetTemperature(ac.entity_id, target, decision))
-    if inp.ac_power and decision == OFF:
+    if inp.ac_power and decision == OFF and inp.ac_power.is_on:
         out.add(Delay(inp.command_delay_ms), SwitchTurnOff(inp.ac_power.entity_id))
 
     if ac.fan_modes and decision != OFF:
-        out.add(Delay(inp.command_delay_ms))
         label = _combined_speed_label(inp, decision)
         matched = match_fan_mode(ac.fan_modes, label)
-        if matched:
-            out.add(SetFanMode(ac.entity_id, matched))
+        if matched and ac.fan_mode != matched:
+            out.add(Delay(inp.command_delay_ms), SetFanMode(ac.entity_id, matched))
 
 
 def _combined_speed_label(inp: EngineInputs, decision: str) -> str:
@@ -380,15 +384,19 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
         out.add(SwitchTurnOn(inp.ac_power.entity_id), Delay(inp.power_on_delay_ms))
     if decision not in {OFF, current}:
         out.add(SetHvacMode(ac.entity_id, decision), Delay(inp.command_delay_ms))
-    if decision == OFF:
+    if decision == OFF and current not in _OFF_LIKE:
         out.add(
             SetHvacMode(ac.entity_id, OFF),
             Delay(inp.command_delay_ms),
             TurnOffClimate(ac.entity_id),
         )
-    if decision in (COOL, FAN_ONLY) and ac.supports_set_temp:
+    if (
+        decision in (COOL, FAN_ONLY)
+        and ac.supports_set_temp
+        and (ac.current_setpoint is None or ac.current_setpoint != inp.ac_setpoint_int)
+    ):
         out.add(SetTemperature(ac.entity_id, inp.ac_setpoint_int, decision))
-    if inp.ac_power and decision == OFF:
+    if inp.ac_power and decision == OFF and inp.ac_power.is_on:
         out.add(SwitchTurnOff(inp.ac_power.entity_id))
 
     has_fan_modes = bool(ac.fan_modes)
@@ -403,7 +411,7 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
         _emit_climate_fan(
             out, ac, has_fan_modes, matched, inp.ac_fan, label, percent, inp
         )
-    elif decision == OFF and inp.ac_fan:
+    elif decision == OFF and inp.ac_fan and inp.ac_fan.is_on:
         out.add(FanTurnOff(inp.ac_fan.entity_id))
 
 
@@ -439,12 +447,21 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
     if decision not in {OFF, current}:
         out.add(SetHvacMode(heater.entity_id, decision), Delay(inp.command_delay_ms))
     if decision == OFF and current != OFF:
-        out.add(SetHvacMode(heater.entity_id, OFF), Delay(inp.command_delay_ms))
-    if decision == OFF:
-        out.add(TurnOffClimate(heater.entity_id))
-    if decision in (HEAT, FAN_ONLY) and heater.supports_set_temp:
+        out.add(
+            SetHvacMode(heater.entity_id, OFF),
+            Delay(inp.command_delay_ms),
+            TurnOffClimate(heater.entity_id),
+        )
+    if (
+        decision in (HEAT, FAN_ONLY)
+        and heater.supports_set_temp
+        and (
+            heater.current_setpoint is None
+            or heater.current_setpoint != inp.target_heating_int
+        )
+    ):
         out.add(SetTemperature(heater.entity_id, inp.target_heating_int, decision))
-    if inp.heater_power and decision == OFF:
+    if inp.heater_power and decision == OFF and inp.heater_power.is_on:
         out.add(SwitchTurnOff(inp.heater_power.entity_id))
 
     has_fan_modes = bool(heater.fan_modes)
@@ -459,7 +476,7 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
         _emit_climate_fan(
             out, heater, has_fan_modes, matched, inp.heater_fan, label, percent, inp
         )
-    elif decision == OFF and inp.heater_fan:
+    elif decision == OFF and inp.heater_fan and inp.heater_fan.is_on:
         out.add(FanTurnOff(inp.heater_fan.entity_id))
     elif decision == OFF and has_fan_modes and current != OFF:
         out.add(SetHvacMode(heater.entity_id, OFF))
@@ -501,7 +518,8 @@ def _standalone_fan(inp: EngineInputs, out: _Out) -> None:
     fan = inp.fan
     assert fan is not None
     if not inp.fan_needs_on:
-        out.add(FanTurnOff(fan.entity_id))
+        if fan.is_on:
+            out.add(FanTurnOff(fan.entity_id))
         return
     label, percent = cooling_speed(inp.room_temp, inp.fan_medium, inp.fan_high)
     if not fan.is_on:

@@ -93,6 +93,7 @@ def _climate(
     min_temp=62.0,
     set_temp=True,
     hvac_modes=("off", "cool"),
+    current_setpoint=None,
 ):
     return ClimateInfo(
         entity_id="climate.ac",
@@ -102,6 +103,7 @@ def _climate(
         fan_modes=tuple(fan_modes),
         min_temp=min_temp,
         supports_set_temp=set_temp,
+        current_setpoint=current_setpoint,
     )
 
 
@@ -154,6 +156,55 @@ def test_split_ac_off_when_use_off():
     cmds = compute_commands(_base(ac=_climate(hvac="cool"), use_ac=False))
     assert _types(cmds) == ["SetHvacMode", "Delay", "TurnOffClimate"]
     assert cmds[0].hvac_mode == "off"
+
+
+def test_split_ac_already_off_emits_nothing():
+    """CC-19: an A/C already off is not re-commanded off on every evaluation."""
+    cmds = compute_commands(_base(ac=_climate(hvac="off"), use_ac=False))
+    assert cmds == []
+
+
+def test_idle_room_with_off_switch_and_fans_emits_nothing():
+    """
+    CC-19: an idle room re-issues no turn-offs to already-off switch/fans.
+
+    Reproduces the 'office' case: split A/C off with an off power switch, an off
+    companion fan, and an off standalone fan must produce no commands on a
+    sub-degree sensor change.
+    """
+
+    def off_fan(eid):
+        return FanInfo(
+            eid,
+            is_on=False,
+            preset_mode=None,
+            percentage=0,
+            preset_modes=("low", "high"),
+        )
+
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high")),
+            ac_power=SwitchInfo("switch.ac_power", is_on=False),
+            ac_fan=off_fan("fan.ac"),
+            fan=off_fan("fan.ceiling"),
+            use_ac=False,
+            use_fan=False,
+            room_temp=73.0,
+        )
+    )
+    assert cmds == []
+
+
+def test_split_heater_already_off_emits_nothing():
+    """CC-19: a heater already off is not re-commanded off on every evaluation."""
+    cmds = compute_commands(
+        _base(
+            heater=_climate(hvac="off", hvac_modes=("off", "heat")),
+            use_heater=False,
+        )
+    )
+    assert cmds == []
 
 
 def test_ac_fan_only_override():
@@ -246,6 +297,34 @@ def test_no_redundant_fan_mode():
     assert not any(isinstance(c, SetFanMode) for c in cmds)
 
 
+def test_combined_no_redundant_fan_mode():
+    """
+    Combined heat pump already in the right mode/setpoint/fan emits no command (CC-19).
+
+    A fractional room_temp change that leaves the truncated comparison unchanged
+    (CC-5) must not re-issue any device command (which the device hears as a beep).
+    """
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="heat",
+                fan_mode="high",
+                hvac_modes=("off", "cool", "heat"),
+                fan_modes=("low", "high"),
+                current_setpoint=68.0,
+            ),
+            use_ac=True,
+            use_heater=True,
+            room_temp=60.4,  # truncates to 60, < 68 -> still heating
+            target_heating=68.0,
+            heating_medium=65.0,
+            heating_high=62.0,  # heating_speed(60, 65, 62) -> "high"
+        )
+    )
+    assert cmds == []
+
+
 def test_split_heater_heats():
     """Heater-alone (no AC, not combined) drives to HEAT with the heating target."""
     cmds = compute_commands(
@@ -279,6 +358,71 @@ def test_combined_off_when_uses_disabled():
     )
     assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds)
     assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_set_temperature_skipped_when_setpoint_already_correct():
+    """SetTemperature skipped when device already has the target setpoint (CC-19)."""
+    # Split A/C: setpoint already at min_temp (62), no SetTemperature needed.
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=62.0),
+            use_ac=True,
+            room_temp=80.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+    # Split A/C: setpoint differs, SetTemperature must be sent.
+    cmds_wrong = compute_commands(
+        _base(
+            ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=70.0),
+            use_ac=True,
+            room_temp=80.0,
+        )
+    )
+    assert any(isinstance(c, SetTemperature) for c in cmds_wrong)
+
+    # Split heater: setpoint already correct, no SetTemperature needed.
+    cmds_heat = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="heat", hvac_modes=("off", "heat"), current_setpoint=68.0
+            ),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds_heat)
+
+    # Combined heat pump: setpoint already correct, no SetTemperature needed.
+    cmds_combined = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="heat",
+                hvac_modes=("off", "cool", "heat"),
+                current_setpoint=68.0,
+            ),
+            use_ac=True,
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds_combined)
+
+
+def test_set_temperature_sent_when_setpoint_unknown():
+    """SetTemperature is sent when current_setpoint is None (device state unknown)."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=None),
+            use_ac=True,
+            room_temp=80.0,
+        )
+    )
+    assert any(isinstance(c, SetTemperature) for c in cmds)
 
 
 def test_split_ac_truncates_before_compare():

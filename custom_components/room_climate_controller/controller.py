@@ -202,20 +202,38 @@ class RoomController:
         if old_val != new_val:
             if entity_id == self.room.temperature_sensor:
                 _LOGGER.info(
-                    "[room=%s] Temperature changed: %s → %s°F",
+                    "[room=%s] Temperature changed: %s → %s°F%s",
                     self.room.key,
                     old_val,
                     new_val,
+                    self._command_suffix(),
                 )
             elif entity_id == self.room.humidity_sensor:
                 _LOGGER.info(
-                    "[room=%s] Humidity changed: %s → %s%%",
+                    "[room=%s] Humidity changed: %s → %s%%%s",
                     self.room.key,
                     old_val,
                     new_val,
+                    self._command_suffix(),
                 )
         self._resubscribe()
         self.async_request_run()
+
+    def _command_suffix(self) -> str:
+        """
+        Describe the device commands the current state would produce, if any.
+
+        Returns ``" (device commanded: <cmds>)"`` listing the non-delay commands,
+        or ``""`` when nothing would be sent. The command list is the diagnostic
+        that explains *why* a device reacted to a sub-degree sensor change.
+        """
+        inputs = self._build_inputs()
+        if inputs is None:
+            return ""
+        cmds = [c for c in compute_commands(inputs) if not isinstance(c, Delay)]
+        if not cmds:
+            return ""
+        return f" (device commanded: {', '.join(repr(c) for c in cmds)})"
 
     # -- evaluation ----------------------------------------------------------
     @callback
@@ -351,6 +369,7 @@ class RoomController:
             return None
         attrs = state.attributes
         features = int(attrs.get("supported_features") or 0)
+        raw_setpoint = attrs.get("temperature")
         return ClimateInfo(
             entity_id=entity_id,
             hvac_mode=attrs.get("hvac_mode") or state.state,
@@ -359,6 +378,7 @@ class RoomController:
             fan_modes=tuple(attrs.get("fan_modes") or ()),
             min_temp=attrs.get("min_temp"),
             supports_set_temp=bool(features & 1),
+            current_setpoint=float(raw_setpoint) if raw_setpoint is not None else None,
         )
 
     def _fan_info(self, entity_id: str | None) -> FanInfo | None:

@@ -12,8 +12,13 @@ free-text search.
 
 - **CC-L1** When the controller detects a room's temperature sensor change:
   `[room=<key>] Temperature changed: <old> → <new>°F`
+  Appends ` (device commanded: <cmds>)` listing the device commands the new state
+  produces, when any. A sub-degree change that crosses no whole-degree threshold
+  (CC-5) should produce none — the suffix is the diagnostic for unexpected commands.
 - **CC-L2** When the controller detects a room's humidity sensor change:
   `[room=<key>] Humidity changed: <old> → <new>%%`
+  Appends ` (device commanded: <cmds>)` as in CC-L1. The engine ignores humidity,
+  so a humidity-only change should never list commands.
 
 Logged by `controller.py` in `_on_change`.  The humidity sensor is now tracked
 alongside the temperature sensor (was previously untracked); tracking it does not

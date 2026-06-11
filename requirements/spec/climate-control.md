@@ -36,6 +36,10 @@ reads and the card/profiles write:
 
 - **CC-5** All comparisons **truncate to whole degrees** (`int(value)`) — room temp, targets, and thresholds alike. Displays may show tenths.
 
+## Idempotent command emission
+
+- **CC-19** The engine emits a device command **only when it changes the device's state**. Every command is gated against the device's currently-reported state and skipped when already satisfied: HVAC-mode / setpoint / fan-mode sets against the climate's reported mode/setpoint/fan_mode, and turn-on/turn-off of climates, fans, and power switches against their current on/off state. Combined with CC-5, a fractional sensor change that leaves the truncated comparison unchanged produces **no commands** — important because many devices (e.g. heat pumps) audibly chirp on every received command.
+
 ## Thresholds & fan-speed tiers
 
 Speed is a 3-tier function of how far the room is past the target:

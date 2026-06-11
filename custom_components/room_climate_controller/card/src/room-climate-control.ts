@@ -329,9 +329,9 @@ export class RoomClimateControl extends LitElement {
 
     if (entityConfigured(c.window_sensor)) {
       rows.push(html`
-        <div class="window-status-row ${winOpen ? "window-status-open" : ""}">
-          <span class="window-status-icon">🪟</span>
-          <span class="window-status-text"
+        <div class="device-row window-status-row ${winOpen ? "window-status-open" : ""}">
+          <span>🪟</span>
+          <span class="device-label"
             >${winOpen ? "A window is open" : "Windows are closed"}</span
           >
         </div>

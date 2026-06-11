@@ -108,15 +108,10 @@ export const cardStyles = css`
     pointer-events: none;
   }
 
-  /* Window status banner shown above Manual Mode (UX-26). */
+  /* Window status banner shown above Manual Mode (UX-26).
+     Layout/padding/border come from .device-row; only color varies. */
   .window-status-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 0.85rem;
     color: var(--secondary-text-color);
-    border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
   }
 
   .window-status-row.window-status-open {

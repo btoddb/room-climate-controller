@@ -54,7 +54,7 @@ export interface WsRoom {
     ac_entity: string | null;
     heater_entity: string | null;
     fan_entity: string | null;
-    window_sensor: string | null;
+    window_sensors: string[];
     ac_device_button: DeviceSettingsButton | null;
     heater_device_button: DeviceSettingsButton | null;
     fan_device_button: DeviceSettingsButton | null;

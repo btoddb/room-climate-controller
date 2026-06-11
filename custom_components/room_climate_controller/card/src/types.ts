@@ -40,9 +40,9 @@ export interface RoomClimateControlConfig extends LovelaceCardConfig {
   ac_entity?: string;
   heater_entity?: string;
   fan_entity?: string;
-  /** Optional window contact; while "on" (open) the engine suppresses
+  /** Optional window contacts; while any reads "on" (open) the engine suppresses
   cooling/heating and the card disables their Use toggles (UX-26). */
-  window_sensor?: string;
+  window_sensors?: string[];
   use_ac: string;
   use_heater: string;
   use_fan: string;

@@ -11,8 +11,12 @@ unit-testable with plain ``python3``.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from .fan_logic import cooling_speed, heating_speed, match_fan_mode
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 COOL = "cool"
 HEAT = "heat"
@@ -20,6 +24,18 @@ FAN_ONLY = "fan_only"
 OFF = "off"
 
 _OFF_LIKE = frozenset({"off", "unavailable", "unknown", "none", "", None})
+
+
+def any_window_open(states: Iterable[str | None]) -> bool:
+    """
+    Return whether a room counts as "window open" given its sensor states (CC-20).
+
+    A room with multiple window sensors is open if **any** one reads ``"on"``.
+    Fail-safe (CC-21): a missing/``None``/``unavailable``/``unknown`` reading is
+    treated as closed, so bad or absent sensor data never suppresses
+    conditioning. A room with no sensors is therefore closed.
+    """
+    return any(state == "on" for state in states)
 
 
 # ---------------------------------------------------------------------------

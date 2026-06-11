@@ -13,8 +13,8 @@ gating is the controller's job — the engine assumes control is active.
 A room has up to three **device types**, in canonical order: **cooling** (A/C),
 **heating** (heater), **fan** (standalone). A room only has the devices it's
 configured with; absent devices are ignored in all rules, entities, and the card.
-A room may also have an optional **window sensor** that suppresses conditioning
-while open (CC-20).
+A room may also have optional **window sensors** that suppress conditioning
+while any is open (CC-20).
 
 - **CC-1** Each device type has an independent **Use** toggle. Use on → the engine may drive that device. Use off → the device is turned off unless another rule supersedes it (see fan-only override).
 - **CC-2** A **combined** room wires one `climate` entity to *both* cooling and heating (a heat pump). It's modeled by `combined=True` with `ac_climate == heater_climate`; the engine runs the combined branch instead of separate A/C + heater branches.
@@ -77,12 +77,13 @@ Speed is a 3-tier function of how far the room is past the target:
 
 - **CC-15** When a room's **manual mode** switch is on, the engine does not drive that room — the user's manual device settings stand. Turning it off resumes control, which may overwrite settings per the rules. Scheduled profile applies are skipped in manual mode; an explicit "apply now" overrides this (see `profiles.md`).
 
-## Window sensor
+## Window sensors
 
-A room may configure one optional **window** `binary_sensor` (`window_sensor`).
+A room may configure zero or more optional **window** `binary_sensor`s
+(`window_sensors`). They only affect their own room's conditioning.
 
-- **CC-20** While the window reads **open** (state `on`), the engine suppresses the **Cool** and **Heat** decisions — a device actively cooling/heating is turned off via the normal OFF path. **Fan-only is not suppressed**: the standalone fan (CC-13), a fan-capable heater's native fan-only, and the fan-only overrides (CC-12) still run, because they circulate air without spending heating/cooling energy. Profile applies still write uses/targets (see `profiles.md`); suppression is enforced at evaluation, so closing the window re-evaluates each device against the current targets with no re-apply. Manual mode (CC-15) still gates first — an open window never overrides a manually driven device.
-- **CC-21** Fail-safe: a window sensor reading `unavailable`/`unknown`, or no sensor configured, is treated as **closed**. A room without a window sensor behaves exactly as before.
+- **CC-20** A room counts as **window open** when **any** of its window sensors reads `on`. While open, the engine suppresses the **Cool** and **Heat** decisions — a device actively cooling/heating is turned off via the normal OFF path. **Fan-only is not suppressed**: the standalone fan (CC-13), a fan-capable heater's native fan-only, and the fan-only overrides (CC-12) still run, because they circulate air without spending heating/cooling energy. Profile applies still write uses/targets (see `profiles.md`); suppression is enforced at evaluation, so closing every window re-evaluates each device against the current targets with no re-apply. Manual mode (CC-15) still gates first — an open window never overrides a manually driven device.
+- **CC-21** Fail-safe: a window sensor reading `unavailable`/`unknown` is treated as **closed**, per sensor. A room with all sensors closed (or none configured) behaves exactly as a room with no window sensor — conditioning is never suppressed on bad/missing data.
 
 ## Constraints (advisory clamping)
 

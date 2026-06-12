@@ -73,10 +73,15 @@ class FanInfo:
     percentage: int
     preset_modes: tuple[str, ...]
     # Direction support (standalone ceiling fans, CC-22..CC-25). ``reversible``
-    # mirrors the entity's DIRECTION capability; ``direction`` is the reported
-    # "forward"/"reverse", or None when unknown.
+    # mirrors the entity's DIRECTION capability or "reverse" preset presence;
+    # ``direction`` is the reported "forward"/"reverse", or None when unknown.
+    # ``direction_via_preset`` is True when direction is set via preset_mode
+    # rather than fan.set_direction; ``forward_preset`` is the preset name to
+    # use when the engine wants to restore forward direction on such fans.
     reversible: bool = False
     direction: str | None = None
+    direction_via_preset: bool = False
+    forward_preset: str = "normal"
 
 
 @dataclass(frozen=True)
@@ -244,6 +249,11 @@ class FanSetDirection(Command):
 
     entity_id: str
     direction: str
+    # When True the controller uses fan.set_preset_mode instead of
+    # fan.set_direction (for fans that express direction as a preset, e.g. Dreo).
+    via_preset: bool = False
+    # Preset name to restore when direction="forward" on a via_preset fan.
+    forward_preset: str = "normal"
 
 
 @dataclass(frozen=True)
@@ -552,4 +562,11 @@ def _standalone_fan(inp: EngineInputs, out: _Out) -> None:
     if fan.reversible:
         desired = REVERSE if inp.fan_reverse else FORWARD
         if fan.direction != desired:
-            out.add(FanSetDirection(fan.entity_id, desired))
+            out.add(
+                FanSetDirection(
+                    fan.entity_id,
+                    desired,
+                    via_preset=fan.direction_via_preset,
+                    forward_preset=fan.forward_preset,
+                )
+            )

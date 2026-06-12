@@ -22,8 +22,10 @@ def fan_supports_direction(hass: HomeAssistant, entity_id: str | None) -> bool:
     """
     Whether a fan entity can spin in reverse (CC-22).
 
-    Detected live from the entity's DIRECTION capability bit; False when the
-    entity is missing or its state isn't loaded yet.
+    Detected live from the entity's DIRECTION capability bit, or — for fans
+    that express direction as a preset mode (e.g. Dreo) — from the presence
+    of a "reverse" entry in their preset_modes list.  False when the entity
+    is missing or its state isn't loaded yet.
     """
     if not entity_id:
         return False
@@ -31,7 +33,22 @@ def fan_supports_direction(hass: HomeAssistant, entity_id: str | None) -> bool:
     if state is None:
         return False
     supported = int(state.attributes.get("supported_features") or 0)
-    return bool(supported & FanEntityFeature.DIRECTION)
+    if supported & FanEntityFeature.DIRECTION:
+        return True
+    return "reverse" in (state.attributes.get("preset_modes") or [])
+
+
+def fan_direction_via_preset(hass: HomeAssistant, entity_id: str | None) -> bool:
+    """Return True when the fan uses preset_mode for direction (CC-22 preset path)."""
+    if not entity_id:
+        return False
+    state = hass.states.get(entity_id)
+    if state is None:
+        return False
+    supported = int(state.attributes.get("supported_features") or 0)
+    if supported & FanEntityFeature.DIRECTION:
+        return False
+    return "reverse" in (state.attributes.get("preset_modes") or [])
 
 
 def resolve_room_entity(

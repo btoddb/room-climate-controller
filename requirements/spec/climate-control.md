@@ -80,15 +80,18 @@ Speed is a 3-tier function of how far the room is past the target:
 ## Standalone fan direction
 
 A reversible ceiling fan can spin **forward** or **reverse**. Reversibility is
-**auto-detected** live from the fan entity's DIRECTION capability
-(`supported_features`) — there is no config-flow toggle. Each room with a
-standalone fan gets a **Fan reverse** `switch.*` entity; it is created
-unconditionally (detection at platform setup would race fan integrations that
-load later) and is simply inert for non-reversible fans. Direction control
+**auto-detected** live from the fan entity — there is no config-flow toggle.
+Detection checks two signals: the standard HA DIRECTION capability bit
+(`supported_features & FanEntityFeature.DIRECTION`), **or** the presence of a
+`"reverse"` entry in the entity's `preset_modes` list (used by integrations such
+as Dreo that express direction as a preset rather than a native direction feature).
+Each room with a standalone fan gets a **Fan reverse** `switch.*` entity; it is
+created unconditionally (detection at platform setup would race fan integrations
+that load later) and is simply inert for non-reversible fans. Direction control
 applies to the **standalone fan only** — the A/C/heater companion fans are
 excluded by design.
 
-- **CC-22** When the standalone fan is **reversible and running**, and its reported `direction` differs from the requested one (Fan reverse switch on → `reverse`, off → `forward`), the engine emits a set-direction command (`fan.set_direction`).
+- **CC-22** When the standalone fan is **reversible and running**, and its reported direction differs from the requested one (Fan reverse switch on → `reverse`, off → `forward`), the engine emits a set-direction command. For fans with native DIRECTION support the controller calls `fan.set_direction`; for fans that use a `"reverse"` preset the controller calls `fan.set_preset_mode("reverse")` to engage and `fan.set_preset_mode(<forward-preset>)` to disengage (the forward preset is the first non-`"reverse"` entry in the entity's `preset_modes`).
 - **CC-23** Idempotence (CC-19 extension): the direction command is **suppressed when the reported direction already matches** the request. An unknown (`None`) reported direction never matches, so it emits.
 - **CC-24** A **non-reversible** fan never receives a direction command, even when the Fan reverse switch is on.
 - **CC-25** Direction is applied **only while the fan is actively running**: when the fan must start and reverse in the same evaluation, turn-on precedes set-direction; a reverse request while the fan is off emits nothing and takes effect at the next turn-on.

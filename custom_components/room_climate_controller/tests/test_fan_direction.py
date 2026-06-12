@@ -66,7 +66,7 @@ def _rfan(
     direction="forward",
     preset_modes=("low", "medium", "high"),
 ):
-    """Build a reversible FanInfo pointing at the given direction."""
+    """Build a reversible FanInfo (native DIRECTION feature) at the given direction."""
     return FanInfo(
         entity_id,
         is_on=is_on,
@@ -75,6 +75,28 @@ def _rfan(
         preset_modes=tuple(preset_modes),
         reversible=True,
         direction=direction,
+    )
+
+
+def _rfan_preset(
+    entity_id="fan.ceiling",
+    *,
+    is_on=True,
+    current_direction="forward",
+    forward_preset="normal",
+):
+    """Build a FanInfo where direction is via preset_mode (CC-22 preset path)."""
+    preset_mode = "reverse" if current_direction == "reverse" else forward_preset
+    return FanInfo(
+        entity_id,
+        is_on=is_on,
+        preset_mode=preset_mode if is_on else None,
+        percentage=50 if is_on else 0,
+        preset_modes=("normal", "natural", "sleep", "reverse"),
+        reversible=True,
+        direction=current_direction,
+        direction_via_preset=True,
+        forward_preset=forward_preset,
     )
 
 
@@ -267,6 +289,78 @@ def test_direction_command_ordering():
             fan_reverse=True,
             use_fan=True,
             room_temp=76.0,  # above target → fan should turn on
+        )
+    )
+    names = [type(c).__name__ for c in cmds]
+    assert "FanTurnOn" in names
+    assert "FanSetDirection" in names
+    assert names.index("FanTurnOn") < names.index("FanSetDirection")
+
+
+# ---------------------------------------------------------------------------
+# CC-22 preset path: direction expressed as preset_mode (e.g. Dreo ceiling fans)
+# ---------------------------------------------------------------------------
+
+
+def test_via_preset_reverse_sets_via_preset_flag():
+    """CC-22: FanSetDirection carries via_preset=True for preset-direction fans."""
+    cmds = compute_commands(
+        _base(
+            fan=_rfan_preset(current_direction="forward"),
+            fan_reverse=True,
+        )
+    )
+    dir_cmds = [c for c in cmds if isinstance(c, FanSetDirection)]
+    assert len(dir_cmds) == 1
+    assert dir_cmds[0].direction == "reverse"
+    assert dir_cmds[0].via_preset is True
+
+
+def test_via_preset_forward_carries_forward_preset():
+    """CC-22: forward FanSetDirection on preset fan carries the forward_preset name."""
+    cmds = compute_commands(
+        _base(
+            fan=_rfan_preset(current_direction="reverse", forward_preset="normal"),
+            fan_reverse=False,
+        )
+    )
+    dir_cmds = [c for c in cmds if isinstance(c, FanSetDirection)]
+    assert len(dir_cmds) == 1
+    assert dir_cmds[0].direction == "forward"
+    assert dir_cmds[0].via_preset is True
+    assert dir_cmds[0].forward_preset == "normal"
+
+
+def test_via_preset_idempotent_when_already_reverse():
+    """CC-23: no FanSetDirection when preset fan is already in reverse."""
+    cmds = compute_commands(
+        _base(
+            fan=_rfan_preset(current_direction="reverse"),
+            fan_reverse=True,
+        )
+    )
+    assert not any(isinstance(c, FanSetDirection) for c in cmds)
+
+
+def test_via_preset_idempotent_when_already_forward():
+    """CC-23: no FanSetDirection when preset fan is already forward."""
+    cmds = compute_commands(
+        _base(
+            fan=_rfan_preset(current_direction="forward"),
+            fan_reverse=False,
+        )
+    )
+    assert not any(isinstance(c, FanSetDirection) for c in cmds)
+
+
+def test_via_preset_turn_on_precedes_direction():
+    """CC-25: FanTurnOn precedes FanSetDirection on the preset path too."""
+    cmds = compute_commands(
+        _base(
+            fan=_rfan_preset(is_on=False, current_direction="forward"),
+            fan_reverse=True,
+            use_fan=True,
+            room_temp=76.0,
         )
     )
     names = [type(c).__name__ for c in cmds]

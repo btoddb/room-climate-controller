@@ -43,7 +43,7 @@ from .engine import (
     any_window_open,
     compute_commands,
 )
-from .entity import fan_supports_direction
+from .entity import fan_direction_via_preset, fan_supports_direction
 from .models import Room, room_uid
 
 if TYPE_CHECKING:
@@ -109,6 +109,13 @@ def _service_for(cmd: Command) -> tuple[str, str, dict]:  # noqa: PLR0911
             },
         )
     if isinstance(cmd, FanSetDirection):
+        if cmd.via_preset:
+            preset = "reverse" if cmd.direction == "reverse" else cmd.forward_preset
+            return (
+                "fan",
+                "set_preset_mode",
+                {"entity_id": cmd.entity_id, "preset_mode": preset},
+            )
         return (
             "fan",
             "set_direction",
@@ -406,14 +413,34 @@ class RoomController:
         if state is None:
             return None
         attrs = state.attributes
+        preset_modes = tuple(attrs.get("preset_modes") or ())
+        via_preset = fan_direction_via_preset(self.hass, entity_id)
+        if via_preset:
+            forward_preset = next((p for p in preset_modes if p != "reverse"), "normal")
+            direction = (
+                "reverse" if attrs.get("preset_mode") == "reverse" else "forward"
+            )
+            _LOGGER.debug(
+                "[room=%s] %s direction via preset; presets=%s fwd=%s cur=%s",
+                self.room.key,
+                entity_id,
+                preset_modes,
+                forward_preset,
+                direction,
+            )
+        else:
+            forward_preset = "normal"
+            direction = attrs.get("direction")
         return FanInfo(
             entity_id=entity_id,
             is_on=state.state == STATE_ON,
             preset_mode=attrs.get("preset_mode"),
             percentage=int(attrs.get("percentage") or 0),
-            preset_modes=tuple(attrs.get("preset_modes") or ()),
+            preset_modes=preset_modes,
             reversible=fan_supports_direction(self.hass, entity_id),
-            direction=attrs.get("direction"),
+            direction=direction,
+            direction_via_preset=via_preset,
+            forward_preset=forward_preset,
         )
 
     def _switch_info(self, entity_id: str | None) -> SwitchInfo | None:

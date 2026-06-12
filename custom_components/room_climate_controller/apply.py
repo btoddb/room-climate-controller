@@ -12,7 +12,13 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_ON
 
-from .const import KEY_AC_FAN_ONLY, KEY_MANUAL_MODE, KEY_TARGET, KEY_USE
+from .const import (
+    KEY_AC_FAN_ONLY,
+    KEY_FAN_REVERSE,
+    KEY_MANUAL_MODE,
+    KEY_TARGET,
+    KEY_USE,
+)
 from .entity import resolve_room_entity
 
 if TYPE_CHECKING:
@@ -98,5 +104,21 @@ async def async_apply_profile(
             "switch",
             "turn_on" if profile.fan_override else "turn_off",
             {"entity_id": ov_eid},
+            blocking=True,
+        )
+
+    if (
+        room.has_fan
+        and room.fan_entity
+        and (
+            rev_eid := resolve_room_entity(
+                hass, entry.entry_id, room.key, KEY_FAN_REVERSE, "switch"
+            )
+        )
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_on" if profile.fan_reverse else "turn_off",
+            {"entity_id": rev_eid},
             blocking=True,
         )

@@ -19,10 +19,12 @@ export interface WsProfile {
   has_heating: boolean;
   has_fan: boolean;
   fan_override: boolean | null;
+  fan_reverse: boolean | null;
   entities: {
     enabled: string | null;
     time: string | null;
     fan_override: string | null;
+    fan_reverse: string | null;
     presets: Record<string, WsPresetDevice>;
   };
 }
@@ -42,10 +44,13 @@ export interface WsRoom {
   has_heating: boolean;
   has_fan: boolean;
   combined: boolean;
+  /** True when the room's standalone fan supports direction (CC-22). */
+  fan_reversible: boolean;
   entities: {
     manual_mode: string | null;
     ac_fan_only_override: string | null;
     heater_fan_only_override: string | null;
+    fan_reverse: string | null;
     temperature: string | null;
     humidity: string | null;
     power: string | null;

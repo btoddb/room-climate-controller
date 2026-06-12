@@ -23,6 +23,9 @@ HEAT = "heat"
 FAN_ONLY = "fan_only"
 OFF = "off"
 
+FORWARD = "forward"
+REVERSE = "reverse"
+
 _OFF_LIKE = frozenset({"off", "unavailable", "unknown", "none", "", None})
 
 
@@ -69,6 +72,11 @@ class FanInfo:
     preset_mode: str | None
     percentage: int
     preset_modes: tuple[str, ...]
+    # Direction support (standalone ceiling fans, CC-22..CC-25). ``reversible``
+    # mirrors the entity's DIRECTION capability; ``direction`` is the reported
+    # "forward"/"reverse", or None when unknown.
+    reversible: bool = False
+    direction: str | None = None
 
 
 @dataclass(frozen=True)
@@ -114,6 +122,8 @@ class EngineInputs:
     # window sensor: True when the room's window is open. Suppresses active
     # cooling/heating (Cool/Heat) only — fan-only circulation is unaffected.
     window_open: bool = False
+    # requested standalone-fan direction: True → reverse, False → forward (CC-22)
+    fan_reverse: bool = False
 
     # derived helpers ----------------------------------------------------
     @property
@@ -226,6 +236,14 @@ class FanSetPercentage(Command):
 
     entity_id: str
     percentage: int
+
+
+@dataclass(frozen=True)
+class FanSetDirection(Command):
+    """Set the spin direction ("forward"/"reverse") on a fan entity."""
+
+    entity_id: str
+    direction: str
 
 
 @dataclass(frozen=True)
@@ -529,3 +547,9 @@ def _standalone_fan(inp: EngineInputs, out: _Out) -> None:
             out.add(FanSetPreset(fan.entity_id, label))
     elif fan.percentage != percent:
         out.add(FanSetPercentage(fan.entity_id, percent))
+    # Direction (CC-22..CC-24): only reversible fans, only while running, and
+    # only when the reported direction differs (unknown never matches).
+    if fan.reversible:
+        desired = REVERSE if inp.fan_reverse else FORWARD
+        if fan.direction != desired:
+            out.add(FanSetDirection(fan.entity_id, desired))

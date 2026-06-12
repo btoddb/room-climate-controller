@@ -9,6 +9,7 @@ export interface RoomPresetConfig {
   useHeating?: string;
   useFan?: string;
   fanOverride?: string;
+  fanReverse?: string;
   cooling: string;
   heating?: string;
   fan?: string;

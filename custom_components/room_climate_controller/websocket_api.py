@@ -19,6 +19,7 @@ from .apply import async_apply_profile
 from .const import (
     DOMAIN,
     KEY_AC_FAN_ONLY,
+    KEY_FAN_REVERSE,
     KEY_GRAPH_TIME_RANGE,
     KEY_HEATER_FAN_ONLY,
     KEY_HIGH_OFFSET,
@@ -27,6 +28,7 @@ from .const import (
     KEY_OUTDOOR_TEMPERATURE,
     KEY_PROFILE_ENABLED,
     KEY_PROFILE_FAN_OVERRIDE,
+    KEY_PROFILE_FAN_REVERSE,
     KEY_PROFILE_PRESET,
     KEY_PROFILE_TIME,
     KEY_PROFILE_USE,
@@ -40,6 +42,7 @@ from .const import (
 )
 from .entity import (
     async_assign_areas,
+    fan_supports_direction,
     resolve_hub_entity,
     resolve_profile_entity,
     resolve_room_entity,
@@ -121,6 +124,10 @@ def _serialize_room(
         "has_heating": room.has_heater,
         "has_fan": room.has_fan,
         "combined": room.combined,
+        # Detected live from the fan entity's DIRECTION capability (CC-22); the
+        # card only shows the Reverse toggle / direction text when true.
+        "fan_reversible": room.has_fan
+        and fan_supports_direction(hass, room.fan_entity),
         "entities": {
             "manual_mode": rr(KEY_MANUAL_MODE, "switch"),
             "ac_fan_only_override": (
@@ -131,6 +138,11 @@ def _serialize_room(
             "heater_fan_only_override": (
                 rr(KEY_HEATER_FAN_ONLY, "switch")
                 if room.has_heater and room.heater_fan_only
+                else None
+            ),
+            "fan_reverse": (
+                rr(KEY_FAN_REVERSE, "switch")
+                if room.has_fan and room.fan_entity
                 else None
             ),
             "temperature": rr(KEY_ROOM_TEMPERATURE, "sensor"),
@@ -183,6 +195,9 @@ def _serialize_profile(
             "temp_entity": rp(KEY_PROFILE_PRESET[device], "number"),
         }
     has_fan_override = bool(room and room.has_ac and room.ac_fan_only)
+    has_fan_reverse = bool(
+        room and room.has_fan and fan_supports_direction(hass, room.fan_entity)
+    )
     return {
         "id": profile.id,
         "name": profile.name,
@@ -193,11 +208,15 @@ def _serialize_profile(
         "has_heating": room.has_heater if room else False,
         "has_fan": room.has_fan if room else False,
         "fan_override": profile.fan_override if has_fan_override else None,
+        "fan_reverse": profile.fan_reverse if has_fan_reverse else None,
         "entities": {
             "enabled": rp(KEY_PROFILE_ENABLED, "switch"),
             "time": rp(KEY_PROFILE_TIME, "time"),
             "fan_override": (
                 rp(KEY_PROFILE_FAN_OVERRIDE, "switch") if has_fan_override else None
+            ),
+            "fan_reverse": (
+                rp(KEY_PROFILE_FAN_REVERSE, "switch") if has_fan_reverse else None
             ),
             "presets": presets,
         },
@@ -502,6 +521,16 @@ def _copy_room_into_profile(
         )
     ):
         profile.fan_override = hass.states.is_state(ov_eid, STATE_ON)
+    if (
+        room.has_fan
+        and room.fan_entity
+        and (
+            rev_eid := resolve_room_entity(
+                hass, entry.entry_id, room.key, KEY_FAN_REVERSE, "switch"
+            )
+        )
+    ):
+        profile.fan_reverse = hass.states.is_state(rev_eid, STATE_ON)
 
 
 def _remove_profile_device(

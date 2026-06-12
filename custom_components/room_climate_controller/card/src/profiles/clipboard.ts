@@ -11,6 +11,7 @@ export interface ClipboardDevicePreset {
 
 export interface ClipboardRoomTemps {
   fanOverride?: boolean;
+  fanReverse?: boolean;
   cooling?: ClipboardDevicePreset | number;
   heating?: ClipboardDevicePreset | number;
   fan?: ClipboardDevicePreset | number;
@@ -74,6 +75,8 @@ export function buildClipboardPayload(
     }
     const fanOvr = readUse(hass, room.fanOverride);
     if (fanOvr !== undefined) entry.fanOverride = fanOvr;
+    const fanRev = readUse(hass, room.fanReverse);
+    if (fanRev !== undefined) entry.fanReverse = fanRev;
 
     roomsMap[room.name] = entry;
   }
@@ -111,6 +114,11 @@ export function applyClipboardPayload(
 
     if (src.fanOverride !== undefined && entityConfigured(room.fanOverride)) {
       setUse(room.fanOverride!, src.fanOverride);
+      applied++;
+    }
+
+    if (src.fanReverse !== undefined && entityConfigured(room.fanReverse)) {
+      setUse(room.fanReverse!, src.fanReverse);
       applied++;
     }
 

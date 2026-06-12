@@ -77,6 +77,22 @@ Speed is a 3-tier function of how far the room is past the target:
 - **CC-13** The fan runs when **Use fan** on **and** room > target_fan; otherwise it's turned off.
 - **CC-14** While on, speed follows the cooling-style tiers (CC-7) against `target_fan` + fan offsets, mapped to 10/50/100% or the fan's preset modes.
 
+## Standalone fan direction
+
+A reversible ceiling fan can spin **forward** or **reverse**. Reversibility is
+**auto-detected** live from the fan entity's DIRECTION capability
+(`supported_features`) — there is no config-flow toggle. Each room with a
+standalone fan gets a **Fan reverse** `switch.*` entity; it is created
+unconditionally (detection at platform setup would race fan integrations that
+load later) and is simply inert for non-reversible fans. Direction control
+applies to the **standalone fan only** — the A/C/heater companion fans are
+excluded by design.
+
+- **CC-22** When the standalone fan is **reversible and running**, and its reported `direction` differs from the requested one (Fan reverse switch on → `reverse`, off → `forward`), the engine emits a set-direction command (`fan.set_direction`).
+- **CC-23** Idempotence (CC-19 extension): the direction command is **suppressed when the reported direction already matches** the request. An unknown (`None`) reported direction never matches, so it emits.
+- **CC-24** A **non-reversible** fan never receives a direction command, even when the Fan reverse switch is on.
+- **CC-25** Direction is applied **only while the fan is actively running**: when the fan must start and reverse in the same evaluation, turn-on precedes set-direction; a reverse request while the fan is off emits nothing and takes effect at the next turn-on.
+
 ## Manual mode
 
 - **CC-15** When a room's **manual mode** switch is on, the engine does not drive that room — the user's manual device settings stand. Turning it off resumes control, which may overwrite settings per the rules. Scheduled profile applies are skipped in manual mode; an explicit "apply now" overrides this (see `profiles.md`).

@@ -81,6 +81,7 @@ function toRoutine(p: WsProfile): RoutineConfig {
     useHeating: presets.heating?.use_entity ?? undefined,
     useFan: presets.fan?.use_entity ?? undefined,
     fanOverride: p.entities.fan_override ?? undefined,
+    fanReverse: p.entities.fan_reverse ?? undefined,
     cooling: presets.cooling?.temp_entity ?? "",
     heating: presets.heating?.temp_entity ?? undefined,
     fan: presets.fan?.temp_entity ?? undefined,

@@ -155,7 +155,7 @@ export class RoomClimateProfilesPanel extends LitElement {
     label: string,
     useEntityId: string | undefined,
     tempEntityId: string | undefined,
-    fanOverrideEntityId?: string
+    extraToggle?: { label: string; entityId?: string }
   ): TemplateResult | typeof nothing {
     const tempObj = entityConfigured(tempEntityId)
       ? getStateObj(this.hass, tempEntityId!)
@@ -163,10 +163,10 @@ export class RoomClimateProfilesPanel extends LitElement {
     const useObj = entityConfigured(useEntityId)
       ? getStateObj(this.hass, useEntityId!)
       : undefined;
-    const fanOvrObj = entityConfigured(fanOverrideEntityId)
-      ? getStateObj(this.hass, fanOverrideEntityId!)
+    const extraObj = entityConfigured(extraToggle?.entityId)
+      ? getStateObj(this.hass, extraToggle!.entityId!)
       : undefined;
-    if (!tempObj && !useObj && !fanOvrObj) return nothing;
+    if (!tempObj && !useObj && !extraObj) return nothing;
 
     const min = Number(tempObj?.attributes.min ?? 0);
     const max = Number(tempObj?.attributes.max ?? 100);
@@ -178,11 +178,11 @@ export class RoomClimateProfilesPanel extends LitElement {
       <div class="profile-device-row">
         <span class="profile-device-label">${label}</span>
         <div class="profile-device-controls">
-          ${fanOvrObj
+          ${extraObj
             ? html`
                 <div class="profile-use">
-                  <span class="profile-use-label">Fan Ovr</span>
-                  <ha-entity-toggle .hass=${this.hass} .stateObj=${fanOvrObj}></ha-entity-toggle>
+                  <span class="profile-use-label">${extraToggle!.label}</span>
+                  <ha-entity-toggle .hass=${this.hass} .stateObj=${extraObj}></ha-entity-toggle>
                 </div>
               `
             : nothing}
@@ -224,12 +224,18 @@ export class RoomClimateProfilesPanel extends LitElement {
     }
     return html`
       <div class="profile-room-block">
-        ${this._renderDeviceRow("Cooling", room.useCooling, room.cooling, room.fanOverride)}
+        ${this._renderDeviceRow("Cooling", room.useCooling, room.cooling, {
+          label: "Fan Ovr",
+          entityId: room.fanOverride,
+        })}
         ${room.has_heating !== false
           ? this._renderDeviceRow("Heating", room.useHeating, room.heating)
           : nothing}
         ${room.has_fan !== false
-          ? this._renderDeviceRow("Fan", room.useFan, room.fan)
+          ? this._renderDeviceRow("Fan", room.useFan, room.fan, {
+              label: "Reverse",
+              entityId: room.fanReverse,
+            })
           : nothing}
       </div>
     `;

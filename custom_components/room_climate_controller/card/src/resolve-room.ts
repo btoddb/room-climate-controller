@@ -68,6 +68,8 @@ export function resolveRoomConfig(
     manual_mode: e.manual_mode ?? "",
     ac_fan_only_override: e.ac_fan_only_override ?? "",
     heater_fan_only_override: e.heater_fan_only_override ?? "",
+    fan_reversible: room.fan_reversible ?? false,
+    fan_reverse_toggle: e.fan_reverse ?? "",
     use_ac: cool.use ?? "",
     target_cooling: cool.target ?? "",
     cooling_medium_offset: cool.medium_offset ?? "",

@@ -57,10 +57,15 @@ export function getFanMode(hass: HomeAssistant, entityId: string): string {
   const state = hass.states[entityId];
   if (!state) return "—";
   if (state.state === "off") return "Off";
+  // Direction suffix for reversible fans while running, e.g. "50% (Reverse)"
+  // (UX-29); fans without the attribute render unchanged.
+  const direction = state.attributes.direction as string | undefined;
+  const suffix =
+    direction === "forward" ? " (Forward)" : direction === "reverse" ? " (Reverse)" : "";
   const pct = state.attributes.percentage as number | undefined;
-  if (pct != null) return `${pct}%`;
+  if (pct != null) return `${pct}%${suffix}`;
   if (!state.state) return "—";
-  return state.state.replace(/\b\w/g, (c) => c.toUpperCase());
+  return state.state.replace(/\b\w/g, (c) => c.toUpperCase()) + suffix;
 }
 
 export function getTargetTemp(hass: HomeAssistant, helperId: string, fallback = 72): number {

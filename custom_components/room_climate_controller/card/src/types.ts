@@ -48,6 +48,9 @@ export interface RoomClimateControlConfig extends LovelaceCardConfig {
   use_fan: string;
   ac_fan_only_override?: string;
   heater_fan_only_override?: string;
+  /** True when the standalone fan supports direction; gates the Reverse toggle (UX-28). */
+  fan_reversible?: boolean;
+  fan_reverse_toggle?: string;
   ac_device_button?: DeviceSettingsButton;
   heater_device_button?: DeviceSettingsButton;
   fan_device_button?: DeviceSettingsButton;

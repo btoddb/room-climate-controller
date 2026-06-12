@@ -16,6 +16,8 @@ export interface DeviceSettingsFields {
   /** When true, computed thresholds subtract offsets from target (heating). */
   subtractOffsets?: boolean;
   deviceButton?: DeviceSettingsButton;
+  /** Fan reverse switch entity; set only when the fan is reversible (UX-28). */
+  reverseToggle?: string;
 }
 
 function parseNum(hass: HomeAssistant, entityId: string, fallback = 0): number {
@@ -68,6 +70,7 @@ export function buildDeviceSettingsFields(
       mediumOffset: config.fan_medium_offset,
       highOffset: config.fan_high_offset,
       deviceButton: config.fan_device_button,
+      reverseToggle: config.fan_reversible ? config.fan_reverse_toggle : undefined,
     });
   }
 
@@ -148,6 +151,24 @@ function renderOffsetSlider(
   `;
 }
 
+function renderReverseRow(
+  hass: HomeAssistant,
+  entityId: string | undefined
+): TemplateResult | typeof nothing {
+  if (!entityId) return nothing;
+  const obj = getStateObj(hass, entityId);
+  if (!obj) return nothing;
+
+  return html`
+    <div class="settings-row">
+      <span class="settings-row-label">Reverse</span>
+      <div class="settings-row-control">
+        <ha-entity-toggle .hass=${hass} .stateObj=${obj}></ha-entity-toggle>
+      </div>
+    </div>
+  `;
+}
+
 export function renderDeviceSettingsSection(
   hass: HomeAssistant,
   fields: DeviceSettingsFields,
@@ -173,6 +194,7 @@ export function renderDeviceSettingsSection(
       ${renderTargetRow(hass, fields.target, "Target")}
       ${renderOffsetSlider(hass, fields.mediumOffset, "Medium offset", medComputed)}
       ${renderOffsetSlider(hass, fields.highOffset, "High offset", highComputed)}
+      ${renderReverseRow(hass, fields.reverseToggle)}
       ${fields.deviceButton && onDeviceButton
         ? html`
             <div class="settings-device-button">

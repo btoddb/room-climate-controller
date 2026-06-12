@@ -14,6 +14,7 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 from .const import (
     DOMAIN,
     KEY_AC_FAN_ONLY,
+    KEY_FAN_REVERSE,
     KEY_HEATER_FAN_ONLY,
     KEY_HIGH_OFFSET,
     KEY_MANUAL_MODE,
@@ -27,6 +28,7 @@ from .engine import (
     Delay,
     EngineInputs,
     FanInfo,
+    FanSetDirection,
     FanSetPercentage,
     FanSetPreset,
     FanTurnOff,
@@ -41,6 +43,7 @@ from .engine import (
     any_window_open,
     compute_commands,
 )
+from .entity import fan_supports_direction
 from .models import Room, room_uid
 
 if TYPE_CHECKING:
@@ -103,6 +106,15 @@ def _service_for(cmd: Command) -> tuple[str, str, dict]:  # noqa: PLR0911
             {
                 "entity_id": cmd.entity_id,
                 "percentage": cmd.percentage,
+            },
+        )
+    if isinstance(cmd, FanSetDirection):
+        return (
+            "fan",
+            "set_direction",
+            {
+                "entity_id": cmd.entity_id,
+                "direction": cmd.direction,
             },
         )
     if isinstance(cmd, SwitchTurnOn):
@@ -186,7 +198,12 @@ class RoomController:
                 domain = "switch" if key.startswith("use_") else "number"
                 if eid := self._resolve(key, domain):
                     ids.add(eid)
-        for key in (KEY_MANUAL_MODE, KEY_AC_FAN_ONLY, KEY_HEATER_FAN_ONLY):
+        for key in (
+            KEY_MANUAL_MODE,
+            KEY_AC_FAN_ONLY,
+            KEY_HEATER_FAN_ONLY,
+            KEY_FAN_REVERSE,
+        ):
             if eid := self._resolve(key, "switch"):
                 ids.add(eid)
         return frozenset(ids)
@@ -317,6 +334,7 @@ class RoomController:
             command_delay_ms=int(room.command_delay * 1000),
             power_on_delay_ms=int(room.power_on_delay * 1000),
             window_open=self._window_open(),
+            fan_reverse=self._switch_state(KEY_FAN_REVERSE, default=False),
         )
 
     # -- state readers -------------------------------------------------------
@@ -394,6 +412,8 @@ class RoomController:
             preset_mode=attrs.get("preset_mode"),
             percentage=int(attrs.get("percentage") or 0),
             preset_modes=tuple(attrs.get("preset_modes") or ()),
+            reversible=fan_supports_direction(self.hass, entity_id),
+            direction=attrs.get("direction"),
         )
 
     def _switch_info(self, entity_id: str | None) -> SwitchInfo | None:

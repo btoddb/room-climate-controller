@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from homeassistant.components.fan import FanEntityFeature
 from homeassistant.core import HomeAssistant, callback
 
 if TYPE_CHECKING:
@@ -15,6 +16,22 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import DOMAIN, SIGNAL_REMOVE_PROFILE
 from .models import Profile, Room, profile_uid, room_uid
+
+
+def fan_supports_direction(hass: HomeAssistant, entity_id: str | None) -> bool:
+    """
+    Whether a fan entity can spin in reverse (CC-22).
+
+    Detected live from the entity's DIRECTION capability bit; False when the
+    entity is missing or its state isn't loaded yet.
+    """
+    if not entity_id:
+        return False
+    state = hass.states.get(entity_id)
+    if state is None:
+        return False
+    supported = int(state.attributes.get("supported_features") or 0)
+    return bool(supported & FanEntityFeature.DIRECTION)
 
 
 def resolve_room_entity(

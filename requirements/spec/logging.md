@@ -66,3 +66,12 @@ Covers: **Use A/C**, **Use heater**, **Use fan**, **Manual mode**,
   `[room=<key>] Room settings changed: '<label>'`
 - **CC-L5c** When a room is removed:
   `[room=<key>] Room removed: '<label>'`
+
+### Window events (CC-L6)
+
+- **CC-L6** When a window sensor transitions to open or closed:
+  `[room=<key>] Window <entity_id> opened|closed`
+
+Logged by `controller.py` in `_on_change`. Only fires when the state value actually
+changes (`old_state != new_state`). Unavailable/unknown states are not treated as
+open (CC-21), so no log is emitted for those transitions.

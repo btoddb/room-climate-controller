@@ -18,7 +18,9 @@ from homeassistant.helpers.event import async_call_later
 from .apply import async_apply_profile
 from .const import (
     DOMAIN,
+    FAN_PRESET_AUTO,
     KEY_AC_FAN_ONLY,
+    KEY_FAN_PRESET,
     KEY_FAN_REVERSE,
     KEY_GRAPH_TIME_RANGE,
     KEY_HEATER_FAN_ONLY,
@@ -28,6 +30,7 @@ from .const import (
     KEY_OUTDOOR_TEMPERATURE,
     KEY_PROFILE_ENABLED,
     KEY_PROFILE_FAN_OVERRIDE,
+    KEY_PROFILE_FAN_PRESET,
     KEY_PROFILE_FAN_REVERSE,
     KEY_PROFILE_PRESET,
     KEY_PROFILE_TIME,
@@ -145,6 +148,11 @@ def _serialize_room(
                 if room.has_fan and room.fan_entity
                 else None
             ),
+            "fan_preset_select": (
+                rr(KEY_FAN_PRESET, "select")
+                if room.has_fan and room.fan_entity
+                else None
+            ),
             "temperature": rr(KEY_ROOM_TEMPERATURE, "sensor"),
             "humidity": rr(KEY_ROOM_HUMIDITY, "sensor")
             if room.humidity_sensor
@@ -198,6 +206,7 @@ def _serialize_profile(
     has_fan_reverse = bool(
         room and room.has_fan and fan_supports_direction(hass, room.fan_entity)
     )
+    has_fan_preset = bool(room and room.has_fan and room.fan_entity)
     return {
         "id": profile.id,
         "name": profile.name,
@@ -209,6 +218,9 @@ def _serialize_profile(
         "has_fan": room.has_fan if room else False,
         "fan_override": profile.fan_override if has_fan_override else None,
         "fan_reverse": profile.fan_reverse if has_fan_reverse else None,
+        "fan_preset": (profile.fan_preset or FAN_PRESET_AUTO)
+        if has_fan_preset
+        else None,
         "entities": {
             "enabled": rp(KEY_PROFILE_ENABLED, "switch"),
             "time": rp(KEY_PROFILE_TIME, "time"),
@@ -217,6 +229,9 @@ def _serialize_profile(
             ),
             "fan_reverse": (
                 rp(KEY_PROFILE_FAN_REVERSE, "switch") if has_fan_reverse else None
+            ),
+            "fan_preset": (
+                rp(KEY_PROFILE_FAN_PRESET, "select") if has_fan_preset else None
             ),
             "presets": presets,
         },
@@ -531,6 +546,13 @@ def _copy_room_into_profile(
         )
     ):
         profile.fan_reverse = hass.states.is_state(rev_eid, STATE_ON)
+    if room.has_fan and room.fan_entity:
+        preset_eid = resolve_room_entity(
+            hass, entry.entry_id, room.key, KEY_FAN_PRESET, "select"
+        )
+        if preset_eid and (state := hass.states.get(preset_eid)) is not None:
+            option = state.state
+            profile.fan_preset = None if option == FAN_PRESET_AUTO else option
 
 
 def _remove_profile_device(

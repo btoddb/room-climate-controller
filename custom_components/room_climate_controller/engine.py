@@ -129,6 +129,8 @@ class EngineInputs:
     window_open: bool = False
     # requested standalone-fan direction: True → reverse, False → forward (CC-22)
     fan_reverse: bool = False
+    # pinned standalone-fan preset: None/"Auto" → engine picks speed tier (CC-26)
+    fan_preset: str | None = None
 
     # derived helpers ----------------------------------------------------
     @property
@@ -549,9 +551,18 @@ def _standalone_fan(inp: EngineInputs, out: _Out) -> None:
         if fan.is_on:
             out.add(FanTurnOff(fan.entity_id))
         return
-    label, percent = cooling_speed(inp.room_temp, inp.fan_medium, inp.fan_high)
     if not fan.is_on:
         out.add(FanTurnOn(fan.entity_id), Delay(inp.command_delay_ms))
+    # CC-26: pinned preset wins — skip tier speed and direction.
+    if (
+        inp.fan_preset
+        and inp.fan_preset != "Auto"
+        and inp.fan_preset in fan.preset_modes
+    ):
+        if fan.preset_mode != inp.fan_preset:
+            out.add(FanSetPreset(fan.entity_id, inp.fan_preset))
+        return
+    label, percent = cooling_speed(inp.room_temp, inp.fan_medium, inp.fan_high)
     if label in fan.preset_modes:
         if (fan.preset_mode or "").lower() != label:
             out.add(FanSetPreset(fan.entity_id, label))

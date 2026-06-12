@@ -295,4 +295,15 @@ export const profileSectionStyles = css`
     color: var(--secondary-text-color);
     padding: 8px 0;
   }
+
+  .profile-preset-select {
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
+    background: var(--card-background-color);
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
 `;

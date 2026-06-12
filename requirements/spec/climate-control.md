@@ -75,7 +75,18 @@ Speed is a 3-tier function of how far the room is past the target:
 ## Standalone fan control
 
 - **CC-13** The fan runs when **Use fan** on **and** room > target_fan; otherwise it's turned off.
-- **CC-14** While on, speed follows the cooling-style tiers (CC-7) against `target_fan` + fan offsets, mapped to 10/50/100% or the fan's preset modes.
+- **CC-14** While on, speed follows the cooling-style tiers (CC-7) against `target_fan` + fan offsets, mapped to 10/50/100% or the fan's preset modes. This applies only when the Fan-preset selector is set to `Auto` (see CC-26).
+
+## Standalone fan preset selection
+
+A standalone fan may expose a `preset_modes` list (e.g. `sleep`, `natural`, `reverse`).
+Each room with a standalone fan gets a **Fan preset** `select.*` entity whose options
+are `["Auto", *fan.preset_modes]` read live from `hass.states`. It is created
+unconditionally so late-loading fan integrations are handled gracefully; it is inert
+(effectively single-option) when the fan has no presets.
+
+- **CC-26** When the Fan-preset selector is set to anything other than `Auto` **and** the fan is running (CC-13): the engine applies the pinned preset via `fan.set_preset_mode` instead of computing a speed tier (CC-14), and speed-tier and direction commands (CC-22–25) are suppressed. Idempotent: the command is omitted when `fan.preset_mode` already matches the pin.
+- `Auto` (the default) leaves CC-14 speed-tier behavior unchanged.
 
 ## Standalone fan direction
 
@@ -86,12 +97,11 @@ Detection checks two signals: the standard HA DIRECTION capability bit
 `"reverse"` entry in the entity's `preset_modes` list (used by integrations such
 as Dreo that express direction as a preset rather than a native direction feature).
 Each room with a standalone fan gets a **Fan reverse** `switch.*` entity; it is
-created unconditionally (detection at platform setup would race fan integrations
-that load later) and is simply inert for non-reversible fans. Direction control
-applies to the **standalone fan only** — the A/C/heater companion fans are
+created unconditionally and is simply inert for non-reversible fans. Direction
+control applies to the **standalone fan only** — the A/C/heater companion fans are
 excluded by design.
 
-- **CC-22** When the standalone fan is **reversible and running**, and its reported direction differs from the requested one (Fan reverse switch on → `reverse`, off → `forward`), the engine emits a set-direction command. For fans with native DIRECTION support the controller calls `fan.set_direction`; for fans that use a `"reverse"` preset the controller calls `fan.set_preset_mode("reverse")` to engage and `fan.set_preset_mode(<forward-preset>)` to disengage (the forward preset is the first non-`"reverse"` entry in the entity's `preset_modes`).
+- **CC-22** When the standalone fan is **reversible and running**, the Fan-preset selector is `Auto`, and the reported direction differs from the requested one (Fan reverse switch on → `reverse`, off → `forward`), the engine emits a set-direction command. For fans with native DIRECTION support the controller calls `fan.set_direction`; for fans that use a `"reverse"` preset the controller calls `fan.set_preset_mode("reverse")` to engage and `fan.set_preset_mode(<forward-preset>)` to disengage (the forward preset is the first non-`"reverse"` entry in the entity's `preset_modes`). When the Fan-preset selector is set to a non-`Auto` value, direction commands are suppressed (CC-26 takes over).
 - **CC-23** Idempotence (CC-19 extension): the direction command is **suppressed when the reported direction already matches** the request. An unknown (`None`) reported direction never matches, so it emits.
 - **CC-24** A **non-reversible** fan never receives a direction command, even when the Fan reverse switch is on.
 - **CC-25** Direction is applied **only while the fan is actively running**: when the fan must start and reverse in the same evaluation, turn-on precedes set-direction; a reverse request while the fan is off emits nothing and takes effect at the next turn-on.

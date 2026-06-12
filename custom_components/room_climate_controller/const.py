@@ -148,6 +148,8 @@ KEY_MANUAL_MODE: Final = "manual_mode"
 KEY_AC_FAN_ONLY: Final = "ac_fan_only_override"
 KEY_HEATER_FAN_ONLY: Final = "heater_fan_only_override"
 KEY_FAN_REVERSE: Final = "fan_reverse"
+KEY_FAN_PRESET: Final = "fan_preset"
+FAN_PRESET_AUTO: Final = "Auto"
 KEY_ROOM_TEMPERATURE: Final = "room_temperature"
 KEY_ROOM_HUMIDITY: Final = "room_humidity"
 KEY_ROOM_POWER: Final = "room_power"
@@ -161,6 +163,7 @@ KEY_PROFILE_ENABLED: Final = "enabled"
 KEY_PROFILE_TIME: Final = "time"
 KEY_PROFILE_FAN_OVERRIDE: Final = "fan_override"
 KEY_PROFILE_FAN_REVERSE: Final = "fan_reverse"
+KEY_PROFILE_FAN_PRESET: Final = "fan_preset"
 KEY_PROFILE_PRESET: Final = {  # preset target temp per device
     DEVICE_COOLING: "cooling",
     DEVICE_HEATING: "heating",

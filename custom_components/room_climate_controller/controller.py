@@ -13,7 +13,9 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 
 from .const import (
     DOMAIN,
+    FAN_PRESET_AUTO,
     KEY_AC_FAN_ONLY,
+    KEY_FAN_PRESET,
     KEY_FAN_REVERSE,
     KEY_HEATER_FAN_ONLY,
     KEY_HIGH_OFFSET,
@@ -342,6 +344,7 @@ class RoomController:
             power_on_delay_ms=int(room.power_on_delay * 1000),
             window_open=self._window_open(),
             fan_reverse=self._switch_state(KEY_FAN_REVERSE, default=False),
+            fan_preset=self._fan_preset(),
         )
 
     # -- state readers -------------------------------------------------------
@@ -375,6 +378,15 @@ class RoomController:
         if eid and (state := self.hass.states.get(eid)):
             return state.state == STATE_ON
         return default
+
+    def _fan_preset(self) -> str | None:
+        """Return the room's pinned fan preset, or None when set to Auto."""
+        eid = self._resolve(KEY_FAN_PRESET, "select")
+        if eid and (state := self.hass.states.get(eid)):
+            option = state.state
+            if option and option not in _INVALID and option != FAN_PRESET_AUTO:
+                return option
+        return None
 
     def _window_open(self) -> bool:
         """

@@ -239,6 +239,7 @@ class Profile:
     time: str | None = None  # "HH:MM"
     fan_override: bool = False
     fan_reverse: bool = False
+    fan_preset: str | None = None
     presets: dict[str, DevicePreset] = field(default_factory=dict)
 
     @classmethod
@@ -265,6 +266,7 @@ class Profile:
             "time": self.time,
             "fan_override": self.fan_override,
             "fan_reverse": self.fan_reverse,
+            "fan_preset": self.fan_preset,
             "presets": {
                 device: {"use": p.use, "temp": p.temp}
                 for device, p in self.presets.items()
@@ -283,6 +285,7 @@ class Profile:
             time=data.get("time"),
             fan_override=bool(data.get("fan_override", False)),
             fan_reverse=bool(data.get("fan_reverse", False)),
+            fan_preset=data.get("fan_preset") or None,
             presets={
                 device: DevicePreset(
                     use=bool(p.get("use", False)),

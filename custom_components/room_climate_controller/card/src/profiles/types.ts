@@ -10,6 +10,8 @@ export interface RoomPresetConfig {
   useFan?: string;
   fanOverride?: string;
   fanReverse?: string;
+  /** Per-profile fan preset select entity id (UX-30). */
+  fanPreset?: string;
   cooling: string;
   heating?: string;
   fan?: string;

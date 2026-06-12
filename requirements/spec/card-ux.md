@@ -14,7 +14,7 @@ hand-edit the generated `www/` bundle.
 - **UX-3** Avoid `browser_mod`. If it's the only way to implement something, ask first.
 - **UX-4** Temperatures display with tenths; comparisons are whole-degree (CC-5). Show units.
 - **UX-5** A fan that's **off** shows status "Off", not a 0%/speed percentage.
-- **UX-29** While a fan that reports a direction is **running**, the Fan section's mode text appends the direction in parentheses — e.g. `50% (Reverse)` or `50% (Forward)`. "Off" stays plain (UX-5); fans without a direction attribute render unchanged.
+- **UX-29** While a fan that reports a direction is **running**, the Fan section's mode text appends the direction in parentheses — e.g. `50% (Reverse)` or `50% (Forward)`. "Off" stays plain (UX-5); fans without a direction attribute render unchanged. When a non-`Auto` preset is active (UX-30), the active preset name is appended instead — e.g. `50% (Sleep)`.
 - **UX-6** **No layout shift on button press.** After a press, indicate success by changing the button's *appearance* (not its size) and don't inject text that reflows the dialog. Light/sound buttons briefly deactivate (~1 s) on press, then reactivate.
 - **UX-27** **Zero-setup, cache-proof card registration.** The integration serves the card bundle itself and registers it as a **Lovelace resource** whose URL carries a content-hash `?v=` param (when resources are YAML-managed it falls back to an extra frontend module). It must never rely on URLs baked into `index.html`: the frontend's service worker caches dashboard pages, so a page cached during HA startup would permanently miss the card ("custom element doesn't exist"). A bundle change must change the resource URL so stale HTTP/service-worker caches are bypassed.
 
@@ -34,7 +34,8 @@ hand-edit the generated `www/` bundle.
 ## Settings dialog
 
 - **UX-12** Shows room temp + humidity, and per device a section with **target temp**, **medium offset**, and **high offset** (target as an input field; offsets as sliders).
-- **UX-28** The Fan section includes a **Reverse** toggle **only when the room's fan is reversible** (CC-22 auto-detection, surfaced as `fan_reversible` in `rooms/list`). It behaves like every other toggle (standard entity toggle, immediate service call).
+- **UX-28** The Fan section includes a **Reverse** toggle **only when the room's fan is reversible via native DIRECTION** (CC-22; `fan_reversible` in `rooms/list`). For fans with a `preset_modes` list the dropdown (UX-30) is shown instead; the Reverse toggle is hidden.
+- **UX-30** When the room's fan has a non-empty `preset_modes` list (surfaced via the room's `fan_preset_select` entity in `rooms/list`), the Fan section in the **settings dialog** and the **profiles panel** shows a **Fan preset** dropdown listing `Auto` plus the fan's preset modes. `Auto` (default) lets the engine control speed automatically. Selecting a named preset pins it (CC-26). The dropdown is a styled native `<select>` — no layout shift on change (UX-6).
 - **UX-13** For any device with a configured **lights & sound** command, a button that blindly sends it (per-device `*_device_button` tap_action). On press, follow UX-6 (deactivate ~1 s, then reactivate).
 
 ## Energy dialog
@@ -58,7 +59,7 @@ on click. See `profiles.md` for behavior.
 
 - **UX-19** Section header uses a bigger font than body text (smaller than the room name) to mark it as a distinct section.
 - **UX-20** Expanded, it shows a **Copy room** button and an **Add** button, then the room's profiles ordered by time. Each row: **time** (AM/PM, right-justified in its column) then a short **name** (vertically aligned), slightly larger than body text.
-- **UX-21** Clicking a profile expands it to show editable target temps, Use toggles, Fan-override toggles, and (when the room's fan is reversible) a **Reverse** toggle on the Fan row.
+- **UX-21** Clicking a profile expands it to show editable target temps, Use toggles, Fan-override toggles, and (when the room's fan is reversible via native DIRECTION) a **Reverse** toggle on the Fan row, or (when the fan has presets) a **Fan preset** dropdown (UX-30).
 - **UX-22** **Add** swaps the dialog to a name + time entry with **Create**/**Cancel**. Time defaults to the next 15-minute interval; focus starts in the Name field.
 - **UX-23** Each profile has **Apply now**, plus **copy/paste** buttons (PR-8–PR-10).
 - **UX-24** If editing a profile's time **reorders the list**, the cursor/focus moves *with* that profile (it must not stay at the old index on a different profile).

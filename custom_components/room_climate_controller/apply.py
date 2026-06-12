@@ -13,7 +13,9 @@ from typing import TYPE_CHECKING
 from homeassistant.const import STATE_ON
 
 from .const import (
+    FAN_PRESET_AUTO,
     KEY_AC_FAN_ONLY,
+    KEY_FAN_PRESET,
     KEY_FAN_REVERSE,
     KEY_MANUAL_MODE,
     KEY_TARGET,
@@ -120,5 +122,21 @@ async def async_apply_profile(
             "switch",
             "turn_on" if profile.fan_reverse else "turn_off",
             {"entity_id": rev_eid},
+            blocking=True,
+        )
+
+    if (
+        room.has_fan
+        and room.fan_entity
+        and (
+            preset_eid := resolve_room_entity(
+                hass, entry.entry_id, room.key, KEY_FAN_PRESET, "select"
+            )
+        )
+    ):
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": preset_eid, "option": profile.fan_preset or FAN_PRESET_AUTO},
             blocking=True,
         )

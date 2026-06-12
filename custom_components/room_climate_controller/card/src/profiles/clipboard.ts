@@ -12,6 +12,8 @@ export interface ClipboardDevicePreset {
 export interface ClipboardRoomTemps {
   fanOverride?: boolean;
   fanReverse?: boolean;
+  /** Pinned fan preset string, e.g. "sleep" or "Auto" (PR-8). */
+  fanPreset?: string;
   cooling?: ClipboardDevicePreset | number;
   heating?: ClipboardDevicePreset | number;
   fan?: ClipboardDevicePreset | number;
@@ -77,6 +79,10 @@ export function buildClipboardPayload(
     if (fanOvr !== undefined) entry.fanOverride = fanOvr;
     const fanRev = readUse(hass, room.fanReverse);
     if (fanRev !== undefined) entry.fanReverse = fanRev;
+    if (entityConfigured(room.fanPreset)) {
+      const fanPresetState = hass.states[room.fanPreset!]?.state;
+      if (fanPresetState) entry.fanPreset = fanPresetState;
+    }
 
     roomsMap[room.name] = entry;
   }
@@ -119,6 +125,14 @@ export function applyClipboardPayload(
 
     if (src.fanReverse !== undefined && entityConfigured(room.fanReverse)) {
       setUse(room.fanReverse!, src.fanReverse);
+      applied++;
+    }
+
+    if (src.fanPreset !== undefined && entityConfigured(room.fanPreset)) {
+      hass.callService("select", "select_option", {
+        entity_id: room.fanPreset!,
+        option: src.fanPreset,
+      });
       applied++;
     }
 

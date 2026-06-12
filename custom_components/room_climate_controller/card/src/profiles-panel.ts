@@ -218,10 +218,49 @@ export class RoomClimateProfilesPanel extends LitElement {
     `;
   }
 
+  /** Render a fan preset dropdown bound to the per-profile select entity (UX-30). */
+  private _renderFanPresetRow(fanPresetEntityId: string): TemplateResult | typeof nothing {
+    const stateObj = getStateObj(this.hass, fanPresetEntityId);
+    if (!stateObj) return nothing;
+    const options: string[] = (stateObj.attributes.options as string[] | undefined) ?? [];
+    if (options.length <= 1) return nothing;
+    const current = stateObj.state ?? "Auto";
+    return html`
+      <div class="profile-device-row fan-preset-row">
+        <span class="profile-device-label">Fan preset</span>
+        <div class="profile-device-controls">
+          <select
+            class="profile-preset-select"
+            .value=${current}
+            @change=${(ev: Event) => {
+              const option = (ev.target as HTMLSelectElement).value;
+              this.hass.callService("select", "select_option", {
+                entity_id: fanPresetEntityId,
+                option,
+              });
+            }}
+          >
+            ${options.map(
+              (opt) => html`<option value=${opt} ?selected=${opt === current}>${opt}</option>`
+            )}
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
   private _renderRoom(room: RoomPresetConfig): TemplateResult {
     if (!room.roomKey) {
       return html`<div class="profile-hint">Preset entities loading… refresh in a moment.</div>`;
     }
+    // Determine fan extra control: preset dropdown supersedes reverse toggle (UX-30).
+    const fanPresetEntityId = entityConfigured(room.fanPreset) ? room.fanPreset : undefined;
+    const fanPresetState = fanPresetEntityId
+      ? getStateObj(this.hass, fanPresetEntityId)
+      : undefined;
+    const fanHasPresets =
+      fanPresetState && (fanPresetState.attributes.options as string[] | undefined ?? []).length > 1;
+
     return html`
       <div class="profile-room-block">
         ${this._renderDeviceRow("Cooling", room.useCooling, room.cooling, {
@@ -232,10 +271,19 @@ export class RoomClimateProfilesPanel extends LitElement {
           ? this._renderDeviceRow("Heating", room.useHeating, room.heating)
           : nothing}
         ${room.has_fan !== false
-          ? this._renderDeviceRow("Fan", room.useFan, room.fan, {
-              label: "Reverse",
-              entityId: room.fanReverse,
-            })
+          ? html`
+              ${this._renderDeviceRow(
+                "Fan",
+                room.useFan,
+                room.fan,
+                fanHasPresets
+                  ? undefined
+                  : { label: "Reverse", entityId: room.fanReverse }
+              )}
+              ${fanHasPresets && fanPresetEntityId
+                ? this._renderFanPresetRow(fanPresetEntityId)
+                : nothing}
+            `
           : nothing}
       </div>
     `;

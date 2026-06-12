@@ -324,7 +324,7 @@ export class RoomClimateControl extends LitElement {
       winOpen
     );
     addDevice("Fan", c.fan_entity, c.use_fan, c.target_fan,
-      (hass, id) => getFanMode(hass, id, c.fan_reversible ?? false));
+      (hass, id) => getFanMode(hass, id, c.fan_reversible ?? false, c.fan_preset_select));
 
     if (rows.length === 0) return nothing;
 

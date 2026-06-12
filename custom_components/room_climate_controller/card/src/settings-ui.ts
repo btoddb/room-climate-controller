@@ -16,8 +16,10 @@ export interface DeviceSettingsFields {
   /** When true, computed thresholds subtract offsets from target (heating). */
   subtractOffsets?: boolean;
   deviceButton?: DeviceSettingsButton;
-  /** Fan reverse switch entity; set only when the fan is reversible (UX-28). */
+  /** Fan reverse switch entity; set only for native-DIRECTION fans (UX-28). */
   reverseToggle?: string;
+  /** Fan preset select entity; set when the fan has preset_modes (UX-30). Supersedes reverseToggle. */
+  presetSelect?: string;
 }
 
 function parseNum(hass: HomeAssistant, entityId: string, fallback = 0): number {
@@ -70,7 +72,14 @@ export function buildDeviceSettingsFields(
       mediumOffset: config.fan_medium_offset,
       highOffset: config.fan_high_offset,
       deviceButton: config.fan_device_button,
-      reverseToggle: config.fan_reversible ? config.fan_reverse_toggle : undefined,
+      // UX-30: preset select supersedes reverse toggle for preset-mode fans
+      presetSelect: entityConfigured(config.fan_preset_select) ? config.fan_preset_select : undefined,
+      reverseToggle:
+        entityConfigured(config.fan_preset_select)
+          ? undefined
+          : config.fan_reversible
+            ? config.fan_reverse_toggle
+            : undefined,
     });
   }
 
@@ -169,6 +178,42 @@ function renderReverseRow(
   `;
 }
 
+/** Fan preset dropdown (UX-30): shown when the fan has a non-empty preset_modes list. */
+function renderPresetSelectRow(
+  hass: HomeAssistant,
+  entityId: string | undefined
+): TemplateResult | typeof nothing {
+  if (!entityId) return nothing;
+  const obj = getStateObj(hass, entityId);
+  if (!obj) return nothing;
+  const options: string[] = (obj.attributes.options as string[] | undefined) ?? [];
+  if (options.length <= 1) return nothing;
+  const current = obj.state ?? "Auto";
+
+  return html`
+    <div class="settings-row">
+      <span class="settings-row-label">Fan preset</span>
+      <div class="settings-row-control">
+        <select
+          class="settings-preset-select"
+          .value=${current}
+          @change=${(ev: Event) => {
+            const option = (ev.target as HTMLSelectElement).value;
+            hass.callService("select", "select_option", {
+              entity_id: entityId,
+              option,
+            });
+          }}
+        >
+          ${options.map(
+            (opt) => html`<option value=${opt} ?selected=${opt === current}>${opt}</option>`
+          )}
+        </select>
+      </div>
+    </div>
+  `;
+}
+
 export function renderDeviceSettingsSection(
   hass: HomeAssistant,
   fields: DeviceSettingsFields,
@@ -194,6 +239,7 @@ export function renderDeviceSettingsSection(
       ${renderTargetRow(hass, fields.target, "Target")}
       ${renderOffsetSlider(hass, fields.mediumOffset, "Medium offset", medComputed)}
       ${renderOffsetSlider(hass, fields.highOffset, "High offset", highComputed)}
+      ${renderPresetSelectRow(hass, fields.presetSelect)}
       ${renderReverseRow(hass, fields.reverseToggle)}
       ${fields.deviceButton && onDeviceButton
         ? html`

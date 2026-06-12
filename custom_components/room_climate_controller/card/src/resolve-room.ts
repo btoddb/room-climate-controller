@@ -70,6 +70,7 @@ export function resolveRoomConfig(
     heater_fan_only_override: e.heater_fan_only_override ?? "",
     fan_reversible: room.fan_reversible ?? false,
     fan_reverse_toggle: e.fan_reverse ?? "",
+    fan_preset_select: e.fan_preset_select ?? "",
     use_ac: cool.use ?? "",
     target_cooling: cool.target ?? "",
     cooling_medium_offset: cool.medium_offset ?? "",

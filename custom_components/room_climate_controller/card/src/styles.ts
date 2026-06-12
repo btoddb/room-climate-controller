@@ -282,6 +282,17 @@ export const cardStyles = css`
     accent-color: var(--primary-color, #03a9f4);
   }
 
+  .settings-preset-select {
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
+    background: var(--card-background-color);
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+
   .settings-device-button {
     padding: 8px 16px 12px;
     border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));

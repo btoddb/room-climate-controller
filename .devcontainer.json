@@ -63,6 +63,9 @@
         "ghcr.io/devcontainers/features/docker-in-docker:3.0.1": {
             // moby packages aren't published for Debian trixie; use upstream Docker CE
             "moby": false
+        },
+        "ghcr.io/devcontainers/features/github-cli:1": {
+            "version": "latest"
         }
     },
     "remoteEnv": {

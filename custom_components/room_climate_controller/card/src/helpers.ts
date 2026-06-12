@@ -53,15 +53,25 @@ export function getHvacMode(hass: HomeAssistant, entityId: string): string {
   return raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function getFanMode(hass: HomeAssistant, entityId: string): string {
+export function getFanMode(
+  hass: HomeAssistant,
+  entityId: string,
+  fanReversible = false
+): string {
   const state = hass.states[entityId];
   if (!state) return "—";
   if (state.state === "off") return "Off";
   // Direction suffix for reversible fans while running, e.g. "50% (Reverse)"
-  // (UX-29); fans without the attribute render unchanged.
+  // (UX-29). Native-DIRECTION fans expose a "direction" attribute; preset-mode
+  // fans (e.g. Dreo) express direction via preset_mode="reverse".
   const direction = state.attributes.direction as string | undefined;
-  const suffix =
-    direction === "forward" ? " (Forward)" : direction === "reverse" ? " (Reverse)" : "";
+  const preset = state.attributes.preset_mode as string | undefined;
+  let suffix = "";
+  if (direction === "forward" || direction === "reverse") {
+    suffix = direction === "reverse" ? " (Reverse)" : " (Forward)";
+  } else if (fanReversible && preset != null) {
+    suffix = preset === "reverse" ? " (Reverse)" : " (Forward)";
+  }
   const pct = state.attributes.percentage as number | undefined;
   if (pct != null) return `${pct}%${suffix}`;
   if (!state.state) return "—";

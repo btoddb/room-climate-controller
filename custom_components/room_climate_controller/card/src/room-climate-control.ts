@@ -323,7 +323,8 @@ export class RoomClimateControl extends LitElement {
       sharedClimateDevice ? undefined : c.heater_fan_only_override,
       winOpen
     );
-    addDevice("Fan", c.fan_entity, c.use_fan, c.target_fan, getFanMode);
+    addDevice("Fan", c.fan_entity, c.use_fan, c.target_fan,
+      (hass, id) => getFanMode(hass, id, c.fan_reversible ?? false));
 
     if (rows.length === 0) return nothing;
 

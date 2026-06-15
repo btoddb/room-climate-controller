@@ -41,6 +41,25 @@ def any_window_open(states: Iterable[str | None]) -> bool:
     return any(state == "on" for state in states)
 
 
+def clamp_setpoint(value: int, min_temp: float | None, max_temp: float | None) -> int:
+    """
+    Clamp a whole-°F setpoint into a device's accepted range, with a 1° margin.
+
+    The margin absorbs °F/°C display rounding (CC-9): a device with a whole-°C
+    limit reports it as a whole °F that can be up to 0.5° off, so the *raw*
+    bound can convert back out of range — e.g. 18 °C reports as 64 °F, but
+    64 °F = 17.78 °C < 18 °C and is rejected, while 65 °F = 18.33 °C is fine.
+    Pulling each bound 1° inward guarantees the value survives the round-trip
+    in either direction; the cost is at most 1 °F off the absolute extreme,
+    which is immaterial because comfort is driven by fan speed.
+    """
+    if max_temp is not None:
+        value = min(value, int(max_temp) - 1)
+    if min_temp is not None:
+        value = max(value, int(min_temp) + 1)
+    return value
+
+
 # ---------------------------------------------------------------------------
 # Inputs
 # ---------------------------------------------------------------------------
@@ -151,7 +170,10 @@ class EngineInputs:
         """Return the AC climate setpoint (device min or 65 °F floor)."""
         # The engine controls comfort via fan speed, so the climate's own target
         # is driven to its lowest settable value (max cooling), or 65 °F when the
-        # device doesn't report a min_temp.
+        # device doesn't report a min_temp. The controller re-clamps this to the
+        # device's *live* range at send time (see clamp_setpoint / CC-9), since
+        # the range can be mode-dependent and reported in whole °F rounded from
+        # the device's native unit.
         min_temp = self.ac.min_temp if self.ac else None
         return round(min_temp if min_temp is not None else 65)
 

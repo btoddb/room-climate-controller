@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
@@ -41,6 +42,7 @@ from .engine import (
     SwitchTurnOn,
     TurnOffClimate,
     any_window_open,
+    clamp_setpoint,
     compute_commands,
 )
 from .entity import fan_direction_via_preset, fan_supports_direction
@@ -251,6 +253,28 @@ class RoomController:
         self._resubscribe()
         self.async_request_run()
 
+    def _resolve(self, cmd: Command) -> Command:
+        """
+        Resolve a command against the device's *live* state before it is sent.
+
+        Currently this clamps a ``SetTemperature`` into the device's reported
+        ``min_temp``/``max_temp`` range (CC-9). Used by both ``_run`` (at send
+        time) and ``_command_suffix`` (the diagnostic) so the logged value
+        matches what is actually sent. The diagnostic reads the range in the
+        device's *current* mode, so for a command sequence that first switches
+        HVAC mode it is a best-effort prediction; ``_run`` resolves each command
+        in order, after the preceding mode switch, against the real range.
+        """
+        if isinstance(cmd, SetTemperature):
+            state = self.hass.states.get(cmd.entity_id)
+            attrs = state.attributes if state else {}
+            temperature = clamp_setpoint(
+                cmd.temperature, attrs.get("min_temp"), attrs.get("max_temp")
+            )
+            if temperature != cmd.temperature:
+                return replace(cmd, temperature=temperature)
+        return cmd
+
     def _command_suffix(self) -> str:
         """
         Describe the device commands the current state would produce, if any.
@@ -262,7 +286,11 @@ class RoomController:
         inputs = self._build_inputs()
         if inputs is None:
             return ""
-        cmds = [c for c in compute_commands(inputs) if not isinstance(c, Delay)]
+        cmds = [
+            self._resolve(c)
+            for c in compute_commands(inputs)
+            if not isinstance(c, Delay)
+        ]
         if not cmds:
             return ""
         return f" (device commanded: {', '.join(repr(c) for c in cmds)})"
@@ -286,10 +314,29 @@ class RoomController:
                 if isinstance(cmd, Delay):
                     await asyncio.sleep(cmd.ms / 1000)
                     continue
-                domain, service, data = _service_for(cmd)
-                await self.hass.services.async_call(
-                    domain, service, data, blocking=True
-                )
+                # Resolve against the device's *live* range, read now rather
+                # than from the build-time snapshot: an A/C reports a
+                # mode-dependent range (off vs cool), and any preceding
+                # SetHvacMode has already switched it, so this reflects the
+                # range the device will actually validate against (CC-9).
+                domain, service, data = _service_for(self._resolve(cmd))
+                # Isolate each call: one device rejecting a command (e.g. a
+                # transient out-of-range setpoint) must not abandon the
+                # remaining commands for this room.
+                try:
+                    await self.hass.services.async_call(
+                        domain, service, data, blocking=True
+                    )
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    _LOGGER.exception(
+                        "Room %s: command failed: %s.%s %s",
+                        self.room.key,
+                        domain,
+                        service,
+                        data,
+                    )
         except asyncio.CancelledError:
             raise
         except Exception:

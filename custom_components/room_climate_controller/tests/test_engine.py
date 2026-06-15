@@ -46,6 +46,7 @@ from rc_pure.engine import (  # noqa: E402
     SwitchInfo,
     SwitchTurnOn,
     any_window_open,
+    clamp_setpoint,
     compute_commands,
 )
 
@@ -131,6 +132,27 @@ def test_fan_mode_matching():
 
 
 # --- engine -----------------------------------------------------------------
+def test_clamp_setpoint_celsius_round_trip():
+    """
+    CC-9: clamp pulls each bound 1° inward to survive °F/°C display rounding.
+
+    A Matter A/C in cool mode reports min 64 °F / max 90 °F (really 18/32 °C).
+    Sending 64 °F converts to 17.78 °C and is rejected, so the engine's
+    "drive to min" target (45) must clamp to 65, and an over-max target to 89.
+    """
+    assert clamp_setpoint(45, 64, 90) == 65
+    assert clamp_setpoint(100, 64, 90) == 89
+    # A value already safely inside the range is left untouched.
+    assert clamp_setpoint(72, 64, 90) == 72
+
+
+def test_clamp_setpoint_passthrough_without_bounds():
+    """Clamp is a no-op when the device reports no min/max."""
+    assert clamp_setpoint(45, None, None) == 45
+    assert clamp_setpoint(45, None, 90) == 45
+    assert clamp_setpoint(100, 64, None) == 100
+
+
 def test_split_ac_cool_with_fan_high():
     cmds = compute_commands(
         _base(

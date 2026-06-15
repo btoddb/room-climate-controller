@@ -53,7 +53,7 @@ Speed is a 3-tier function of how far the room is past the target:
 ## Cooling (A/C) control — split rooms
 
 - **CC-9** Decision: if **Use A/C** on **and** room > target_cooling → **Cool**. Else if fan-only override applies (CC-12) → **Fan Only**. Else → **Off**.
-- The engine controls comfort via fan speed, so the climate's own setpoint is driven to its **lowest settable value** (`min_temp`), or **65 °F** when the device doesn't report one.
+- The engine controls comfort via fan speed, so the climate's own setpoint is driven to its **lowest settable value** (`min_temp`), or **65 °F** when the device doesn't report one. Before sending, the controller **clamps the setpoint into the device's live accepted range** (`min_temp`/`max_temp` read at send time, after the HVAC-mode switch, since the range can be **mode-dependent** — e.g. an A/C advertises a default range while off and its real range only in `cool`). The clamp pulls each bound **1 °F inward** to survive °F/°C display rounding: a whole-°C limit is reported as a whole °F up to 0.5° off, so a raw bound can convert back out of range (18 °C reports as 64 °F, but 64 °F = 17.78 °C is rejected while 65 °F = 18.33 °C is accepted). The resulting setpoint is at most 1 °F off the absolute extreme, which is immaterial since comfort is driven by fan speed.
 - Fan speed while cooling follows the cooling tiers (CC-7) via climate `fan_mode` or the companion `ac_fan`.
 
 ## Heating control — split rooms
@@ -123,3 +123,4 @@ tab) — non-blocking, no deprecated notify methods.
 ## Command timing
 
 - **CC-19** Commands are spaced by `command_delay` (default 2 s) and a longer `power_on_delay` (default 3 s) after powering a switch, to let devices settle. The engine emits explicit `Delay` commands; the controller honors them.
+- **CC-26** Command execution is **per-command resilient**: a single failed service call (e.g. a device rejecting an out-of-range setpoint) is logged with its `domain.service`/data and the controller **continues with the remaining commands** for the room rather than abandoning the evaluation.

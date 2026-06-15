@@ -64,4 +64,6 @@ git -C "$REPO_ROOT" tag "$VERSION_TAG"
 git -C "$REPO_ROOT" push origin main
 git -C "$REPO_ROOT" push origin "$VERSION_TAG"
 
+gh release create ${VERSION_TAG} --generate-notes
+
 echo "Released $VERSION_TAG"

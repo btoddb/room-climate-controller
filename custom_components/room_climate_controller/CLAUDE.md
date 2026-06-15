@@ -25,7 +25,7 @@ this file is about *how the code is laid out and tested*.
 
 - **Python 3.14+.** Format and lint with **ruff** (`scripts/lint`); make coding choices with ruff's rules in mind.
 - **Keep `engine.py` and `fan_logic.py` fully standalone** — they must import **nothing** from Home Assistant *and nothing from this integration* (no `const.py`, no `models.py`; `const.py` itself imports `homeassistant`). That total isolation is why they define their own input dataclasses and why `tests/test_engine.py` can load them without HA. `models.py` is looser: it imports `const.py`, so it isn't HA-free, but it must avoid **direct** `homeassistant` imports.
-- **Temperatures are °F; comparisons truncate to whole degrees via `int()`** (see [requirements/README.md](../../requirements/README.md) "Conventions"). Never switch threshold/target comparisons to `round()` or raw float math.
+- **Temperatures are °F.** Setpoints and fan-speed thresholds truncate to whole degrees via `int()` (CC-5) — never switch those to `round()` or raw float math. **Exception:** the on/off start/stop decision uses the CC-27 float hysteresis (`_wants_cool` / `_wants_heat` in `engine.py`) — tenths are intentional there.
 - **Entity identity is deterministic.** Use `room_uid()` / `profile_uid()` (`models.py`) and the `KEY_*` maps (`const.py`) — don't hand-build unique_ids.
 - **`except A, B:` is correct here — don't "fix" it to `except (A, B):`.** This project targets Python 3.14, where [PEP 758](https://peps.python.org/pep-0758/) allows unparenthesized exception tuples when there's no `as` binding, and `ruff format` canonicalizes to that form (it will strip parens you add). It reads like the removed Python 2 `except Exc, name:` idiom but is not — there's no `as`, so both types are caught.
 

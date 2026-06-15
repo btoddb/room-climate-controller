@@ -98,8 +98,14 @@ async def async_setup_entry(
     hub = entry.runtime_data
 
     for room in hub.rooms.values():
+        specs = _room_specs(room)
+        _LOGGER.debug(
+            "[room=%s] number: %s",
+            room.key,
+            ", ".join(s.name for s in specs),
+        )
         async_add_entities(
-            [RoomNumber(entry, room, spec) for spec in _room_specs(room)],
+            [RoomNumber(entry, room, spec) for spec in specs],
             config_subentry_id=room.room_id,
         )
 

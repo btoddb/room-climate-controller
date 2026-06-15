@@ -102,7 +102,7 @@ async def async_setup_entry(
         _LOGGER.debug(
             "[room=%s] number: %s",
             room.key,
-            ", ".join(s.name for s in specs),
+            ", ".join(f"{s.name} [{s.minimum:.0f}-{s.maximum:.0f}]" for s in specs),
         )
         async_add_entities(
             [RoomNumber(entry, room, spec) for spec in specs],

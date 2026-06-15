@@ -21,14 +21,6 @@ Every directory under `custom_components/` **except `room_climate_controller`** 
 `scripts/lint` — leaves changes under one of these directories, revert them; never
 commit a diff outside `room_climate_controller`.
 
-## Requirements
-
-Functional behavior is specified in [requirements/](requirements/) — start at
-[requirements/README.md](requirements/README.md). The living spec under
-`requirements/spec/` always reflects shipped behavior; new work starts in
-`requirements/proposals/`. When something ships, fold it into the spec.
-
-
 ## Implementation details
 
 - **Python version:** target python version 3.14 or newer
@@ -62,17 +54,3 @@ There are **two independent version numbers** — never hand-edit either:
   intentional). Bumped only by `scripts/create-release.sh`.
 - **Card:** `card/package.json` (plain `X.Y.Z`). Bumped only by `scripts/deploy.sh`,
   which also syncs the console banner in `card/src/index.ts`.
-
-## Spec discipline
-
-- A change in behavior must update the matching rule in `requirements/spec/` **in the
-  same change** — the living spec always reflects shipped code.
-- Rule IDs (`CC-*`, `PR-*`, `UX-*`) are **stable**: add new IDs, never renumber or
-  reuse existing ones. Cite the IDs you touched in commits and PRs.
-
-
-## Git workflow
-
-- **Do NOT work on `main`.** Create a feature branch.
-- The project prefers **linear history** — rebase/squash rather than merge.
-- Don't commit `config/.storage`, the HA database, or `card/node_modules`.

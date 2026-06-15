@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -52,6 +53,8 @@ from .const import (
     DOMAIN,
     SUBENTRY_TYPE_ROOM,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class RoomClimateConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -171,6 +174,14 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
                         CONF_COMBINED: user_input[CONF_COMBINED],
                     }
                 )
+                _LOGGER.debug(
+                    "[room=%s] basics: label=%r has_ac=%s has_heater=%s has_fan=%s",
+                    key,
+                    label,
+                    user_input[CONF_HAS_AC],
+                    user_input[CONF_HAS_HEATER],
+                    user_input[CONF_HAS_FAN],
+                )
                 return await self.async_step_devices()
 
         schema = vol.Schema(
@@ -196,7 +207,21 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
     ) -> SubentryFlowResult:
         """Step 2: assign device entities (climate, fan, power switch)."""
         if user_input is not None:
-            self._data.update(user_input)
+            _LOGGER.debug(
+                "[room=%s] devices submitted: %s",
+                self._data.get(CONF_ROOM_KEY),
+                user_input,
+            )
+            for key in self._device_field_keys():
+                self._data[key] = user_input.get(key)
+            _LOGGER.debug(
+                "[room=%s] devices saved: ac=%s ac_fan=%s heater=%s fan=%s",
+                self._data.get(CONF_ROOM_KEY),
+                self._data.get(CONF_AC_CLIMATE),
+                self._data.get(CONF_AC_FAN_ENTITY),
+                self._data.get(CONF_HEATER_CLIMATE),
+                self._data.get(CONF_FAN_ENTITY),
+            )
             return await self.async_step_sensors()
 
         fields: dict[Any, Any] = {}
@@ -235,6 +260,14 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
     ) -> SubentryFlowResult:
         """Step 3: pick sensors, temperature limits, and timing delays."""
         if user_input is not None:
+            _LOGGER.debug(
+                "[room=%s] sensors submitted: temp=%s humidity=%s power=%s windows=%s",
+                self._data.get(CONF_ROOM_KEY),
+                user_input.get(CONF_TEMPERATURE_SENSOR),
+                user_input.get(CONF_HUMIDITY_SENSOR),
+                user_input.get(CONF_POWER_SENSOR),
+                user_input.get(CONF_WINDOW_SENSORS),
+            )
             limits: dict[str, dict[str, float]] = {}
             for device, lo, hi in (
                 (DEVICE_COOLING, "cooling_min", "cooling_max"),
@@ -344,9 +377,37 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
                 suggested[hi] = limits[device].get("max")
         return suggested
 
+    def _device_field_keys(self) -> list[str]:
+        """Keys rendered on the devices step, gated by the room's capabilities."""
+        keys: list[str] = []
+        if self._data.get(CONF_HAS_AC):
+            keys += [
+                CONF_AC_CLIMATE,
+                CONF_AC_FAN_ENTITY,
+                CONF_AC_POWER_SWITCH,
+                CONF_AC_FAN_ONLY,
+                CONF_AC_DEVICE_BUTTON,
+            ]
+        if self._data.get(CONF_HAS_HEATER) and not self._data.get(CONF_COMBINED):
+            keys += [
+                CONF_HEATER_CLIMATE,
+                CONF_HEATER_FAN_ENTITY,
+                CONF_HEATER_POWER_SWITCH,
+                CONF_HEATER_FAN_ONLY,
+                CONF_HEATER_DEVICE_BUTTON,
+            ]
+        if self._data.get(CONF_HAS_FAN):
+            keys += [CONF_FAN_ENTITY, CONF_FAN_DEVICE_BUTTON]
+        return keys
+
     def _finish(self) -> SubentryFlowResult:
         """Create or update the subentry with the accumulated data."""
         title = self._data[CONF_LABEL]
+        _LOGGER.debug(
+            "[room=%s] %s complete",
+            self._data.get(CONF_ROOM_KEY),
+            "reconfigure" if self._is_reconfigure else "add",
+        )
         if self._is_reconfigure:
             return self.async_update_and_abort(
                 self._get_entry(),

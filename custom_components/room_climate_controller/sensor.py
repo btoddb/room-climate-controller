@@ -10,6 +10,7 @@ can re-point the real weather sensor in one place.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -32,6 +33,8 @@ from .const import (
 )
 from .entity import hub_identifier, room_device_info
 from .models import Room, room_uid
+
+_LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -93,6 +96,11 @@ async def async_setup_entry(
     for room in hub.rooms.values():
         specs = _room_specs(room)
         if specs:
+            _LOGGER.debug(
+                "[room=%s] sensor: %s",
+                room.key,
+                ", ".join(f"{s.name} ({s.source})" for s in specs),
+            )
             async_add_entities(
                 [RoomMirrorSensor(entry, room, spec) for spec in specs],
                 config_subentry_id=room.room_id,

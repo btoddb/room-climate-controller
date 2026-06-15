@@ -475,14 +475,6 @@ class RoomController:
             direction = (
                 "reverse" if attrs.get("preset_mode") == "reverse" else "forward"
             )
-            _LOGGER.debug(
-                "[room=%s] %s direction via preset; presets=%s fwd=%s cur=%s",
-                self.room.key,
-                entity_id,
-                preset_modes,
-                forward_preset,
-                direction,
-            )
         else:
             forward_preset = "normal"
             direction = attrs.get("direction")

@@ -1,10 +1,16 @@
 # Spec: Logging
 
-All log messages are emitted at **INFO** level and use the Python logger hierarchy
+All log messages use the Python logger hierarchy
 (`custom_components.room_climate_controller.*`).  Filter by that namespace in HA's
 **Settings → System → Logs** to see only RCC messages.  Each message embeds
 `[room=<key>]` and/or `[profile=<id>]` tags so you can narrow results with
 free-text search.
+
+Runtime events (temperature/humidity changes, profile actions, toggle changes, room
+lifecycle) are emitted at **INFO** level.  Diagnostic detail — per-step config-flow
+progress, entity lists registered per platform — is emitted at **DEBUG** level and
+requires `custom_components.room_climate_controller: debug` in the HA logger config
+to appear.
 
 ## Log events
 

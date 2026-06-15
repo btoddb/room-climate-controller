@@ -212,7 +212,8 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
                 self._data.get(CONF_ROOM_KEY),
                 user_input,
             )
-            for key in self._device_field_keys():
+            for vol_key, _ in self._device_fields():
+                key = vol_key.schema
                 self._data[key] = user_input.get(key)
             _LOGGER.debug(
                 "[room=%s] devices saved: ac=%s ac_fan=%s heater=%s fan=%s",
@@ -224,32 +225,11 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
             )
             return await self.async_step_sensors()
 
-        fields: dict[Any, Any] = {}
-        has_ac = self._data.get(CONF_HAS_AC)
-        has_heater = self._data.get(CONF_HAS_HEATER)
-        has_fan = self._data.get(CONF_HAS_FAN)
         combined = self._data.get(CONF_COMBINED)
-
-        if has_ac:
-            fields[vol.Optional(CONF_AC_CLIMATE)] = _CLIMATE
-            fields[vol.Optional(CONF_AC_FAN_ENTITY)] = _FAN
-            fields[vol.Optional(CONF_AC_POWER_SWITCH)] = _SWITCH
-            fields[vol.Required(CONF_AC_FAN_ONLY, default=False)] = _BOOL
-            fields[vol.Optional(CONF_AC_DEVICE_BUTTON)] = _OBJECT
-        if has_heater and not combined:
-            fields[vol.Optional(CONF_HEATER_CLIMATE)] = _CLIMATE
-            fields[vol.Optional(CONF_HEATER_FAN_ENTITY)] = _FAN
-            fields[vol.Optional(CONF_HEATER_POWER_SWITCH)] = _SWITCH
-            fields[vol.Required(CONF_HEATER_FAN_ONLY, default=False)] = _BOOL
-            fields[vol.Optional(CONF_HEATER_DEVICE_BUTTON)] = _OBJECT
-        if has_fan:
-            fields[vol.Optional(CONF_FAN_ENTITY)] = _FAN
-            fields[vol.Optional(CONF_FAN_DEVICE_BUTTON)] = _OBJECT
-
         return self.async_show_form(
             step_id="devices",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(fields), self._data
+                vol.Schema(dict(self._device_fields())), self._data
             ),
             description_placeholders={"combined": "yes" if combined else "no"},
         )
@@ -377,28 +357,35 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
                 suggested[hi] = limits[device].get("max")
         return suggested
 
-    def _device_field_keys(self) -> list[str]:
-        """Keys rendered on the devices step, gated by the room's capabilities."""
-        keys: list[str] = []
+    def _device_fields(self) -> list[tuple[Any, Any]]:
+        """
+        Return devices-step schema fields gated by room capabilities.
+
+        Both the form schema and the save loop iterate this so they can't drift.
+        """
+        fields: list[tuple[Any, Any]] = []
         if self._data.get(CONF_HAS_AC):
-            keys += [
-                CONF_AC_CLIMATE,
-                CONF_AC_FAN_ENTITY,
-                CONF_AC_POWER_SWITCH,
-                CONF_AC_FAN_ONLY,
-                CONF_AC_DEVICE_BUTTON,
+            fields += [
+                (vol.Optional(CONF_AC_CLIMATE), _CLIMATE),
+                (vol.Optional(CONF_AC_FAN_ENTITY), _FAN),
+                (vol.Optional(CONF_AC_POWER_SWITCH), _SWITCH),
+                (vol.Required(CONF_AC_FAN_ONLY, default=False), _BOOL),
+                (vol.Optional(CONF_AC_DEVICE_BUTTON), _OBJECT),
             ]
         if self._data.get(CONF_HAS_HEATER) and not self._data.get(CONF_COMBINED):
-            keys += [
-                CONF_HEATER_CLIMATE,
-                CONF_HEATER_FAN_ENTITY,
-                CONF_HEATER_POWER_SWITCH,
-                CONF_HEATER_FAN_ONLY,
-                CONF_HEATER_DEVICE_BUTTON,
+            fields += [
+                (vol.Optional(CONF_HEATER_CLIMATE), _CLIMATE),
+                (vol.Optional(CONF_HEATER_FAN_ENTITY), _FAN),
+                (vol.Optional(CONF_HEATER_POWER_SWITCH), _SWITCH),
+                (vol.Required(CONF_HEATER_FAN_ONLY, default=False), _BOOL),
+                (vol.Optional(CONF_HEATER_DEVICE_BUTTON), _OBJECT),
             ]
         if self._data.get(CONF_HAS_FAN):
-            keys += [CONF_FAN_ENTITY, CONF_FAN_DEVICE_BUTTON]
-        return keys
+            fields += [
+                (vol.Optional(CONF_FAN_ENTITY), _FAN),
+                (vol.Optional(CONF_FAN_DEVICE_BUTTON), _OBJECT),
+            ]
+        return fields
 
     def _finish(self) -> SubentryFlowResult:
         """Create or update the subentry with the accumulated data."""

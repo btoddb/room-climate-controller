@@ -46,11 +46,8 @@ jobs:
           python-version: "3.14"
           cache: "pip"
 
-      # The engine tests are HA-free by design (see tests/test_engine.py), so
-      # install only pytest — pulling in the full requirements.txt costs
-      # minutes per run for the homeassistant tree the tests never import.
-      - name: Install pytest
-        run: python3 -m pip install "$(grep '^pytest==' requirements.txt)"
+      - name: Install requirements
+        run: python3 -m pip install -r requirements.txt
 
       - name: Run engine tests
         run: python3 -m pytest

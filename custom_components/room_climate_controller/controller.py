@@ -253,7 +253,7 @@ class RoomController:
         self._resubscribe()
         self.async_request_run()
 
-    def _resolve(self, cmd: Command) -> Command:
+    def _resolve_command(self, cmd: Command) -> Command:
         """
         Resolve a command against the device's *live* state before it is sent.
 
@@ -287,7 +287,7 @@ class RoomController:
         if inputs is None:
             return ""
         cmds = [
-            self._resolve(c)
+            self._resolve_command(c)
             for c in compute_commands(inputs)
             if not isinstance(c, Delay)
         ]
@@ -319,7 +319,7 @@ class RoomController:
                 # mode-dependent range (off vs cool), and any preceding
                 # SetHvacMode has already switched it, so this reflects the
                 # range the device will actually validate against (CC-9).
-                domain, service, data = _service_for(self._resolve(cmd))
+                domain, service, data = _service_for(self._resolve_command(cmd))
                 # Isolate each call: one device rejecting a command (e.g. a
                 # transient out-of-range setpoint) must not abandon the
                 # remaining commands for this room.

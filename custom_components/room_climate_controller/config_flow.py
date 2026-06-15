@@ -403,10 +403,22 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
     def _finish(self) -> SubentryFlowResult:
         """Create or update the subentry with the accumulated data."""
         title = self._data[CONF_LABEL]
-        _LOGGER.debug(
-            "[room=%s] %s complete",
+        _LOGGER.info(
+            "[room=%s] %s saved: label=%r has_ac=%s has_heater=%s has_fan=%s"
+            " ac_climate=%s ac_fan=%s heater_climate=%s heater_fan=%s fan=%s"
+            " temp_sensor=%s",
             self._data.get(CONF_ROOM_KEY),
-            "reconfigure" if self._is_reconfigure else "add",
+            "reconfigured" if self._is_reconfigure else "added",
+            title,
+            self._data.get(CONF_HAS_AC),
+            self._data.get(CONF_HAS_HEATER),
+            self._data.get(CONF_HAS_FAN),
+            self._data.get(CONF_AC_CLIMATE),
+            self._data.get(CONF_AC_FAN_ENTITY),
+            self._data.get(CONF_HEATER_CLIMATE),
+            self._data.get(CONF_HEATER_FAN_ENTITY),
+            self._data.get(CONF_FAN_ENTITY),
+            self._data.get(CONF_TEMPERATURE_SENSOR),
         )
         if self._is_reconfigure:
             return self.async_update_and_abort(

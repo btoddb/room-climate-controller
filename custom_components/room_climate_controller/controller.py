@@ -240,6 +240,14 @@ class RoomController:
                     new_val,
                     self._command_suffix(),
                 )
+            elif entity_id in self.room.window_sensors:
+                state_label = "opened" if new_val == "on" else "closed"
+                _LOGGER.info(
+                    "[room=%s] Window %s %s",
+                    self.room.key,
+                    entity_id,
+                    state_label,
+                )
         self._resubscribe()
         self.async_request_run()
 

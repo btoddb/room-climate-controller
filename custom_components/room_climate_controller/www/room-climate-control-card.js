@@ -746,12 +746,20 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
   }
 
   .profile-item-body {
-    padding: 0 0 12px;
+    padding: 0 32px 12px;
+  }
+
+  .profile-name-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 8px;
   }
 
   .profile-name-field {
     display: block;
-    margin-bottom: 8px;
+    flex: 1;
+    margin-bottom: 0;
   }
 
   .profile-name-field .profile-name-input {
@@ -807,6 +815,7 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 8px;
+    justify-content: center;
   }
 
   .profile-action-btn {
@@ -846,12 +855,19 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
     font-size: 0.9rem;
   }
 
-  .profile-device-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+  .profile-device-temp {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .profile-device-toggles {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .profile-use {
@@ -906,19 +922,7 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
     `}_renderDeviceRow(e,t,i,o){const s=_e(i)?Ae(this.hass,i):void 0,r=_e(t)?Ae(this.hass,t):void 0,n=_e(o?.entityId)?Ae(this.hass,o.entityId):void 0;if(!s&&!r&&!n)return K;const a=Number(s?.attributes.min??0),l=Number(s?.attributes.max??100),c=Number(s?.attributes.step??1),d=s?parseFloat(s.state):NaN,h=Number.isNaN(d)?"":String(Math.round(d));return L`
       <div class="profile-device-row">
         <span class="profile-device-label">${e}</span>
-        <div class="profile-device-controls">
-          ${n?L`
-                <div class="profile-use">
-                  <span class="profile-use-label">${o.label}</span>
-                  <ha-entity-toggle .hass=${this.hass} .stateObj=${n}></ha-entity-toggle>
-                </div>
-              `:K}
-          ${r?L`
-                <div class="profile-use">
-                  <span class="profile-use-label">Use</span>
-                  <ha-entity-toggle .hass=${this.hass} .stateObj=${r}></ha-entity-toggle>
-                </div>
-              `:K}
+        <div class="profile-device-temp">
           ${s?L`
                 <div class="profile-temp">
                   <input
@@ -931,6 +935,20 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
                     @change=${e=>{const t=parseFloat(e.target.value);Number.isNaN(t)||be(this.hass,i,t)}}
                   />
                   <span class="profile-temp-unit">°F</span>
+                </div>
+              `:K}
+        </div>
+        <div class="profile-device-toggles">
+          ${n?L`
+                <div class="profile-use">
+                  <span class="profile-use-label">${o.label}</span>
+                  <ha-entity-toggle .hass=${this.hass} .stateObj=${n}></ha-entity-toggle>
+                </div>
+              `:K}
+          ${r?L`
+                <div class="profile-use">
+                  <span class="profile-use-label">Use</span>
+                  <ha-entity-toggle .hass=${this.hass} .stateObj=${r}></ha-entity-toggle>
                 </div>
               `:K}
         </div>
@@ -955,18 +973,29 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
           <span class="profile-chevron">▼</span>
         </summary>
         <div class="profile-item-body">
-          <label class="profile-field-label profile-name-field">
-            Name
-            <input
-              type="text"
-              class="profile-name-input ${"error"===this._fieldFeedback[r]?"field-error":""}"
-              .value=${this._renameValue(e)}
-              ?disabled=${this._busy}
-              @input=${t=>{this._renameDrafts={...this._renameDrafts,[e.profileId]:t.target.value}}}
-              @change=${t=>{this._commitProfileName(e,t.target.value)}}
-              @keydown=${t=>{"Enter"===t.key&&(t.preventDefault(),this._commitProfileName(e,t.target.value))}}
-            />
-          </label>
+          <div class="profile-name-row">
+            <label class="profile-field-label profile-name-field">
+              Name
+              <input
+                type="text"
+                class="profile-name-input ${"error"===this._fieldFeedback[r]?"field-error":""}"
+                .value=${this._renameValue(e)}
+                ?disabled=${this._busy}
+                @input=${t=>{this._renameDrafts={...this._renameDrafts,[e.profileId]:t.target.value}}}
+                @change=${t=>{this._commitProfileName(e,t.target.value)}}
+                @keydown=${t=>{"Enter"===t.key&&(t.preventDefault(),this._commitProfileName(e,t.target.value))}}
+              />
+            </label>
+            <div class="profile-enable">
+              <span class="profile-field-label">Enabled</span>
+              ${_e(e.enabled)&&Ae(this.hass,e.enabled)?L`
+                    <ha-entity-toggle
+                      .hass=${this.hass}
+                      .stateObj=${Ae(this.hass,e.enabled)}
+                    ></ha-entity-toggle>
+                  `:K}
+            </div>
+          </div>
           <div class="profile-schedule">
             <label class="profile-field-label">
               Time
@@ -980,16 +1009,8 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
                 @keydown=${t=>{if("Enter"===t.key){t.preventDefault();const i=t.target.value;i&&this._setProfileTime(e,i)}}}
               />
             </label>
-            <div class="profile-enable">
-              <span class="profile-field-label">Enabled</span>
-              ${_e(e.enabled)&&Ae(this.hass,e.enabled)?L`
-                    <ha-entity-toggle
-                      .hass=${this.hass}
-                      .stateObj=${Ae(this.hass,e.enabled)}
-                    ></ha-entity-toggle>
-                  `:K}
-            </div>
           </div>
+          ${this._renderRoom(e.room)}
           <div class="profile-actions">
             ${this._renderActionButton(`apply-${e.profileId}`,"Apply now","mdi:check-circle-outline",()=>this._applyNow(e),{primary:!0})}
             ${this._renderActionButton(`copy-${e.profileId}`,"Copy","mdi:content-copy",()=>this._copyProfile(e))}
@@ -999,7 +1020,6 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
           ${this._actionError[e.profileId]?L`<div class="profile-add-error" role="alert">
                 ${this._actionError[e.profileId]}
               </div>`:K}
-          ${this._renderRoom(e.room)}
         </div>
       </details>
     `}_renderToolbar(){return L`
@@ -1066,5 +1086,5 @@ const it=2;let ot=class{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,
           ${0===e.length?L`<div class="profile-hint">No profiles for this room yet.</div>`:ft(e,e=>e.profileId,e=>this._renderProfile(e))}
         </div>
       </details>
-    `}static get styles(){return Ot}};e([pe({attribute:!1})],It.prototype,"hass",void 0),e([pe({attribute:!1})],It.prototype,"config",void 0),e([pe({attribute:!1})],It.prototype,"roomKey",void 0),e([fe()],It.prototype,"_profilesOpen",void 0),e([fe()],It.prototype,"_busy",void 0),e([fe()],It.prototype,"_newProfileName",void 0),e([fe()],It.prototype,"_newProfileTime",void 0),e([fe()],It.prototype,"_showAddForm",void 0),e([fe()],It.prototype,"_addError",void 0),e([fe()],It.prototype,"_actionError",void 0),e([fe()],It.prototype,"_renameDrafts",void 0),e([fe()],It.prototype,"_feedbackVersion",void 0),e([fe()],It.prototype,"_fieldFeedback",void 0),e([fe()],It.prototype,"_openProfileIds",void 0),e([fe()],It.prototype,"_focusTarget",void 0),e([fe()],It.prototype,"_focusAddName",void 0),e([fe()],It.prototype,"_pasteRoomSettingsOnCreate",void 0),It=e([ce("room-climate-profiles-panel")],It),window.customCards=window.customCards||[],window.customCards.push({type:"room-climate-control",name:"Room Climate Control",description:"Per-room climate dashboard card wired to a room's backend helpers and devices.",preview:!0}),console.info("%c ROOM-CLIMATE-CONTROL %c v1.4.69 ","color: white; background: #0288d1; font-weight: 700;","color: #0288d1; background: white; font-weight: 700;");
+    `}static get styles(){return Ot}};e([pe({attribute:!1})],It.prototype,"hass",void 0),e([pe({attribute:!1})],It.prototype,"config",void 0),e([pe({attribute:!1})],It.prototype,"roomKey",void 0),e([fe()],It.prototype,"_profilesOpen",void 0),e([fe()],It.prototype,"_busy",void 0),e([fe()],It.prototype,"_newProfileName",void 0),e([fe()],It.prototype,"_newProfileTime",void 0),e([fe()],It.prototype,"_showAddForm",void 0),e([fe()],It.prototype,"_addError",void 0),e([fe()],It.prototype,"_actionError",void 0),e([fe()],It.prototype,"_renameDrafts",void 0),e([fe()],It.prototype,"_feedbackVersion",void 0),e([fe()],It.prototype,"_fieldFeedback",void 0),e([fe()],It.prototype,"_openProfileIds",void 0),e([fe()],It.prototype,"_focusTarget",void 0),e([fe()],It.prototype,"_focusAddName",void 0),e([fe()],It.prototype,"_pasteRoomSettingsOnCreate",void 0),It=e([ce("room-climate-profiles-panel")],It),window.customCards=window.customCards||[],window.customCards.push({type:"room-climate-control",name:"Room Climate Control",description:"Per-room climate dashboard card wired to a room's backend helpers and devices.",preview:!0}),console.info("%c ROOM-CLIMATE-CONTROL %c v1.4.75 ","color: white; background: #0288d1; font-weight: 700;","color: #0288d1; background: white; font-weight: 700;");
 //# sourceMappingURL=room-climate-control-card.js.map

@@ -177,23 +177,7 @@ export class RoomClimateProfilesPanel extends LitElement {
     return html`
       <div class="profile-device-row">
         <span class="profile-device-label">${label}</span>
-        <div class="profile-device-controls">
-          ${extraObj
-            ? html`
-                <div class="profile-use">
-                  <span class="profile-use-label">${extraToggle!.label}</span>
-                  <ha-entity-toggle .hass=${this.hass} .stateObj=${extraObj}></ha-entity-toggle>
-                </div>
-              `
-            : nothing}
-          ${useObj
-            ? html`
-                <div class="profile-use">
-                  <span class="profile-use-label">Use</span>
-                  <ha-entity-toggle .hass=${this.hass} .stateObj=${useObj}></ha-entity-toggle>
-                </div>
-              `
-            : nothing}
+        <div class="profile-device-temp">
           ${tempObj
             ? html`
                 <div class="profile-temp">
@@ -210,6 +194,24 @@ export class RoomClimateProfilesPanel extends LitElement {
                     }}
                   />
                   <span class="profile-temp-unit">°F</span>
+                </div>
+              `
+            : nothing}
+        </div>
+        <div class="profile-device-toggles">
+          ${extraObj
+            ? html`
+                <div class="profile-use">
+                  <span class="profile-use-label">${extraToggle!.label}</span>
+                  <ha-entity-toggle .hass=${this.hass} .stateObj=${extraObj}></ha-entity-toggle>
+                </div>
+              `
+            : nothing}
+          ${useObj
+            ? html`
+                <div class="profile-use">
+                  <span class="profile-use-label">Use</span>
+                  <ha-entity-toggle .hass=${this.hass} .stateObj=${useObj}></ha-entity-toggle>
                 </div>
               `
             : nothing}
@@ -524,38 +526,52 @@ export class RoomClimateProfilesPanel extends LitElement {
           <span class="profile-chevron">▼</span>
         </summary>
         <div class="profile-item-body">
-          <label class="profile-field-label profile-name-field">
-            Name
-            <input
-              type="text"
-              class="profile-name-input ${this._fieldFeedback[nameFieldKey] === "error"
-                ? "field-error"
-                : ""}"
-              .value=${this._renameValue(routine)}
-              ?disabled=${this._busy}
-              @input=${(ev: Event) => {
-                this._renameDrafts = {
-                  ...this._renameDrafts,
-                  [routine.profileId]: (ev.target as HTMLInputElement).value,
-                };
-              }}
-              @change=${(ev: Event) => {
-                void this._commitProfileName(
-                  routine,
-                  (ev.target as HTMLInputElement).value
-                );
-              }}
-              @keydown=${(ev: KeyboardEvent) => {
-                if (ev.key === "Enter") {
-                  ev.preventDefault();
+          <div class="profile-name-row">
+            <label class="profile-field-label profile-name-field">
+              Name
+              <input
+                type="text"
+                class="profile-name-input ${this._fieldFeedback[nameFieldKey] === "error"
+                  ? "field-error"
+                  : ""}"
+                .value=${this._renameValue(routine)}
+                ?disabled=${this._busy}
+                @input=${(ev: Event) => {
+                  this._renameDrafts = {
+                    ...this._renameDrafts,
+                    [routine.profileId]: (ev.target as HTMLInputElement).value,
+                  };
+                }}
+                @change=${(ev: Event) => {
                   void this._commitProfileName(
                     routine,
                     (ev.target as HTMLInputElement).value
                   );
-                }
-              }}
-            />
-          </label>
+                }}
+                @keydown=${(ev: KeyboardEvent) => {
+                  if (ev.key === "Enter") {
+                    ev.preventDefault();
+                    void this._commitProfileName(
+                      routine,
+                      (ev.target as HTMLInputElement).value
+                    );
+                  }
+                }}
+              />
+            </label>
+            <div class="profile-enable">
+              <span class="profile-field-label">Enabled</span>
+              ${entityConfigured(routine.enabled) &&
+              getStateObj(this.hass, routine.enabled)
+                ? html`
+                    <ha-entity-toggle
+                      .hass=${this.hass}
+                      .stateObj=${getStateObj(this.hass, routine.enabled)!}
+                    ></ha-entity-toggle>
+                  `
+                : nothing}
+            </div>
+          </div>
           <div class="profile-schedule">
             <label class="profile-field-label">
               Time
@@ -580,19 +596,8 @@ export class RoomClimateProfilesPanel extends LitElement {
                 }}
               />
             </label>
-            <div class="profile-enable">
-              <span class="profile-field-label">Enabled</span>
-              ${entityConfigured(routine.enabled) &&
-              getStateObj(this.hass, routine.enabled)
-                ? html`
-                    <ha-entity-toggle
-                      .hass=${this.hass}
-                      .stateObj=${getStateObj(this.hass, routine.enabled)!}
-                    ></ha-entity-toggle>
-                  `
-                : nothing}
-            </div>
           </div>
+          ${this._renderRoom(routine.room)}
           <div class="profile-actions">
             ${this._renderActionButton(
               `apply-${routine.profileId}`,
@@ -626,7 +631,6 @@ export class RoomClimateProfilesPanel extends LitElement {
                 ${this._actionError[routine.profileId]}
               </div>`
             : nothing}
-          ${this._renderRoom(routine.room)}
         </div>
       </details>
     `;

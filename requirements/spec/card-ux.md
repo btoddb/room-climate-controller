@@ -58,7 +58,7 @@ on click. See `profiles.md` for behavior.
 
 - **UX-19** Section header uses a bigger font than body text (smaller than the room name) to mark it as a distinct section.
 - **UX-20** Expanded, it shows a **Copy room** button and an **Add** button, then the room's profiles ordered by time. Each row: **time** (AM/PM, right-justified in its column) then a short **name** (vertically aligned), slightly larger than body text.
-- **UX-21** Clicking a profile expands it to show editable target temps, Use toggles, Fan-override toggles, and (when the room's fan is reversible) a **Reverse** toggle on the Fan row.
+- **UX-21** Clicking a profile expands it to show editable target temps, Use toggles, Fan-override toggles, and (when the room's fan is reversible) a **Reverse** toggle on the Fan row. Each device row mirrors the main card's device-row layout: the device label on the left, the temp input centered in the middle of the row, and the toggles grouped on the right as vertical stacks (label above toggle).
 - **UX-22** **Add** swaps the dialog to a name + time entry with **Create**/**Cancel**. Time defaults to the next 15-minute interval; focus starts in the Name field.
 - **UX-23** Each profile has **Apply now**, plus **copy/paste** buttons (PR-8–PR-10).
 - **UX-24** If editing a profile's time **reorders the list**, the cursor/focus moves *with* that profile (it must not stay at the old index on a different profile).

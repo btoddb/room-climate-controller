@@ -148,12 +148,20 @@ export const profileSectionStyles = css`
   }
 
   .profile-item-body {
-    padding: 0 0 12px;
+    padding: 0 32px 12px;
+  }
+
+  .profile-name-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 8px;
   }
 
   .profile-name-field {
     display: block;
-    margin-bottom: 8px;
+    flex: 1;
+    margin-bottom: 0;
   }
 
   .profile-name-field .profile-name-input {
@@ -209,6 +217,7 @@ export const profileSectionStyles = css`
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 8px;
+    justify-content: center;
   }
 
   .profile-action-btn {
@@ -248,12 +257,19 @@ export const profileSectionStyles = css`
     font-size: 0.9rem;
   }
 
-  .profile-device-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+  .profile-device-temp {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .profile-device-toggles {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .profile-use {

@@ -35,20 +35,21 @@ _OFF_LIKE = frozenset({"off", "unavailable", "unknown", "none", "", None})
 # running mode (COOL/HEAT/fan on) is the hysteresis state — the engine stays
 # stateless. Setpoints and fan-speed tiers still truncate (CC-5).
 HYSTERESIS_OFF: Final = 0.2
+HYSTERESIS_ON: Final = 1.0
 
 
 def _wants_cool(room: float, target: float, running: bool) -> bool:  # noqa: FBT001
     """Cooling-style hysteresis (CC-27): hold near target, restart a degree past it."""
     if running:
         return room > target + HYSTERESIS_OFF
-    return room >= target + 1.0
+    return room >= target + HYSTERESIS_ON
 
 
 def _wants_heat(room: float, target: float, running: bool) -> bool:  # noqa: FBT001
     """Heating hysteresis (CC-27): mirror of :func:`_wants_cool`."""
     if running:
         return room < target - HYSTERESIS_OFF
-    return room <= target - 1.0
+    return room <= target - HYSTERESIS_ON
 
 
 def any_window_open(states: Iterable[str | None]) -> bool:

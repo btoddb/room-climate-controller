@@ -323,8 +323,9 @@ def test_combined_no_redundant_fan_mode():
     """
     Combined heat pump already in the right mode/setpoint/fan emits no command (CC-19).
 
-    A fractional room_temp change that leaves the truncated comparison unchanged
-    (CC-5) must not re-issue any device command (which the device hears as a beep).
+    A fractional room_temp change well inside the hysteresis band (CC-27) leaves
+    the decision unchanged, so it must not re-issue any device command (which the
+    device hears as a beep).
     """
     cmds = compute_commands(
         _base(
@@ -338,7 +339,7 @@ def test_combined_no_redundant_fan_mode():
             ),
             use_ac=True,
             use_heater=True,
-            room_temp=60.4,  # truncates to 60, < 68 -> still heating
+            room_temp=60.4,  # well below 67.8 -> still heating
             target_heating=68.0,
             heating_medium=65.0,
             heating_high=62.0,  # heating_speed(60, 65, 62) -> "high"
@@ -447,19 +448,19 @@ def test_set_temperature_sent_when_setpoint_unknown():
     assert any(isinstance(c, SetTemperature) for c in cmds)
 
 
-def test_split_ac_truncates_before_compare():
-    """Comparisons truncate to whole degrees: 72.9 -> 72, so 72 > 72 is False."""
+def test_split_ac_idle_restarts_at_next_degree():
+    """CC-27: an off A/C does not restart cooling until the room reaches target + 1°."""
     cmds = compute_commands(
         _base(
             ac=_climate(hvac="off", fan_modes=("low", "high")),
             use_ac=True,
-            room_temp=72.9,  # truncates to 72, not rounded up to 73
+            room_temp=72.9,  # below the 73.0 restart threshold -> stays off
             target_cooling=72.0,
         )
     )
     assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds)
 
-    # One whole degree warmer (73) does cross the threshold and triggers cooling.
+    # At the next whole degree (73) the room crosses the restart threshold.
     cmds_hot = compute_commands(
         _base(
             ac=_climate(hvac="off", fan_modes=("low", "high")),
@@ -469,6 +470,159 @@ def test_split_ac_truncates_before_compare():
         )
     )
     assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "cool" for c in cmds_hot)
+
+
+# --- CC-27 hysteresis deadband ---------------------------------------------
+def test_split_ac_hysteresis_keeps_cooling_near_target():
+    """CC-27: a running A/C keeps cooling until the room is within 0.2° of target."""
+    # Running (hvac=cool), room 71.5, target 71 -> 71.5 > 71.2, still cooling.
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=62.0),
+            use_ac=True,
+            room_temp=71.5,
+            target_cooling=71.0,
+        )
+    )
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds)
+
+    # Running, room 71.1 -> within 0.2° of target, cooling turns off.
+    cmds_off = compute_commands(
+        _base(
+            ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=62.0),
+            use_ac=True,
+            room_temp=71.1,
+            target_cooling=71.0,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds_off)
+
+
+def test_split_heater_hysteresis():
+    """CC-27: heater holds until within 0.2° of target, restarts a degree below."""
+    # Running heat, room 67.5, target 68 -> 67.5 < 67.8, still heating.
+    cmds = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="heat", hvac_modes=("off", "heat"), current_setpoint=68.0
+            ),
+            use_heater=True,
+            room_temp=67.5,
+            target_heating=68.0,
+        )
+    )
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds)
+
+    # Running heat, room 67.9 -> within 0.2° of target, turns off.
+    cmds_off = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="heat", hvac_modes=("off", "heat"), current_setpoint=68.0
+            ),
+            use_heater=True,
+            room_temp=67.9,
+            target_heating=68.0,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds_off)
+
+    # Off, room 67.5 -> above the 67.0 restart threshold, stays off.
+    cmds_idle = compute_commands(
+        _base(
+            heater=_climate(hvac="off", hvac_modes=("off", "heat")),
+            use_heater=True,
+            room_temp=67.5,
+            target_heating=68.0,
+        )
+    )
+    assert not any(
+        isinstance(c, SetHvacMode) and c.hvac_mode == "heat" for c in cmds_idle
+    )
+
+    # Off, room 67.0 (target - 1°) -> heating restarts.
+    cmds_cold = compute_commands(
+        _base(
+            heater=_climate(hvac="off", hvac_modes=("off", "heat")),
+            use_heater=True,
+            room_temp=67.0,
+            target_heating=68.0,
+        )
+    )
+    assert any(isinstance(c, SetHvacMode) and c.hvac_mode == "heat" for c in cmds_cold)
+
+
+def test_combined_hysteresis():
+    """CC-27: a running combined heat pump keeps cooling near target; idle holds."""
+    # Running cool, room 71.5, target 71 -> still cooling (no off).
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="cool",
+                hvac_modes=("off", "cool", "heat"),
+                current_setpoint=62.0,
+            ),
+            use_ac=True,
+            use_heater=True,
+            room_temp=71.5,
+            target_cooling=71.0,
+            target_heating=68.0,
+        )
+    )
+    assert not any(isinstance(c, SetHvacMode) and c.hvac_mode == "off" for c in cmds)
+
+    # Off, room 71.5 -> below the 72.0 cooling restart threshold and above the
+    # heating restart threshold, so the device stays off.
+    cmds_idle = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(hvac="off", hvac_modes=("off", "cool", "heat")),
+            use_ac=True,
+            use_heater=True,
+            room_temp=71.5,
+            target_cooling=71.0,
+            target_heating=68.0,
+        )
+    )
+    assert not any(
+        isinstance(c, SetHvacMode) and c.hvac_mode in ("cool", "heat")
+        for c in cmds_idle
+    )
+
+
+def test_standalone_fan_hysteresis():
+    """CC-27: a running standalone fan holds until within 0.2° of target."""
+
+    def fan(is_on):
+        return FanInfo(
+            "fan.tower",
+            is_on=is_on,
+            preset_mode="low" if is_on else None,
+            percentage=10 if is_on else 0,
+            preset_modes=("low", "medium", "high"),
+        )
+
+    # Running, room 72.5, target 72 -> 72.5 > 72.2, stays on (no turn-off).
+    cmds = compute_commands(_base(fan=fan(is_on=True), use_fan=True, room_temp=72.5))
+    assert not any(type(c).__name__ == "FanTurnOff" for c in cmds)
+
+    # Running, room 72.1 -> within 0.2° of target, fan turns off.
+    cmds_off = compute_commands(
+        _base(fan=fan(is_on=True), use_fan=True, room_temp=72.1)
+    )
+    assert any(type(c).__name__ == "FanTurnOff" for c in cmds_off)
+
+    # Off, room 72.5 -> below the 73.0 restart threshold, stays off.
+    cmds_idle = compute_commands(
+        _base(fan=fan(is_on=False), use_fan=True, room_temp=72.5)
+    )
+    assert not any(type(c).__name__ == "FanTurnOn" for c in cmds_idle)
+
+    # Off, room 73.0 (target + 1°) -> fan restarts.
+    cmds_on = compute_commands(
+        _base(fan=fan(is_on=False), use_fan=True, room_temp=73.0)
+    )
+    assert any(type(c).__name__ == "FanTurnOn" for c in cmds_on)
 
 
 def test_combined_fan_only_uses_cooling_tiers():

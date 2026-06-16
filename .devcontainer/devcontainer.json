@@ -3,6 +3,7 @@
     "image": "mcr.microsoft.com/devcontainers/base:debian",
     "postCreateCommand": {
         "setup": "scripts/setup && npm --prefix custom_components/room_climate_controller/card install",
+        "claude-cli": "npm install -g @anthropic-ai/claude-code",
         "hassfest-alias": "echo 'alias hassfest=\"docker run --rm -v \\$(pwd):/github/workspace ghcr.io/home-assistant/hassfest:latest\"' >> ~/.zshrc"
     },
     "forwardPorts": [
@@ -45,7 +46,7 @@
     "remoteUser": "vscode",
     "features": {
         "ghcr.io/devcontainers/features/node:2.0.0": {
-            "version": "20"
+            "version": "lts"
         },
         "ghcr.io/devcontainers/features/python:1": {
             // minimum for room-climate-controller is 3.13, but using 3.14 for development

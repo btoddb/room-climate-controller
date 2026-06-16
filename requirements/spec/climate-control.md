@@ -34,7 +34,12 @@ reads and the card/profiles write:
 
 ## Temperature comparison
 
-- **CC-5** All comparisons **truncate to whole degrees** (`int(value)`) — room temp, targets, and thresholds alike. Displays may show tenths.
+- **CC-5** Setpoints and **fan-speed thresholds** (CC-7) **truncate to whole degrees** (`int(value)`) — targets and offsets alike. Displays may show tenths. The on/off **start/stop** decision is the exception: it uses the CC-27 hysteresis in tenths, not a truncated compare.
+- **CC-27** The on/off decision uses an **asymmetric hysteresis deadband** to stop devices chattering near the target. A device's reported running mode (`cool`/`heat` for climates, on/off for the standalone fan) is the hysteresis state, so the engine stays stateless:
+  - **Cooling / standalone fan** (target `T`): once running, keep conditioning while `room > T + 0.2`; once stopped, do not restart until `room >= T + 1.0` (the next whole degree past the target).
+  - **Heating** (target `T`): mirror — once running, keep heating while `room < T − 0.2`; once stopped, do not restart until `room <= T − 1.0`.
+
+  The `0.2 °F` off-margin (`HYSTERESIS_OFF` in `engine.py`) lets a device cool/heat to within a fifth of a degree of the target before stopping, while the restart threshold sits a full degree away — so the room must drift a whole degree past the target before the device cycles back on. A device in `fan_only` is **not** "running" for this purpose (its mode is neither `cool` nor `heat`), so it requires the full restart threshold to begin conditioning. The deadband is a fixed constant (not configurable).
 
 ## Idempotent command emission
 
@@ -52,18 +57,18 @@ Speed is a 3-tier function of how far the room is past the target:
 
 ## Cooling (A/C) control — split rooms
 
-- **CC-9** Decision: if **Use A/C** on **and** room > target_cooling → **Cool**. Else if fan-only override applies (CC-12) → **Fan Only**. Else → **Off**.
+- **CC-9** Decision: if **Use A/C** on **and** the room is past the cooling threshold (CC-27 hysteresis against target_cooling) → **Cool**. Else if fan-only override applies (CC-12) → **Fan Only**. Else → **Off**.
 - The engine controls comfort via fan speed, so the climate's own setpoint is driven to its **lowest settable value** (`min_temp`), or **65 °F** when the device doesn't report one. Before sending, the controller **clamps the setpoint into the device's live accepted range** (`min_temp`/`max_temp` read at send time, after the HVAC-mode switch, since the range can be **mode-dependent** — e.g. an A/C advertises a default range while off and its real range only in `cool`). The clamp pulls each bound **1 °F inward** to survive °F/°C display rounding: a whole-°C limit is reported as a whole °F up to 0.5° off, so a raw bound can convert back out of range (18 °C reports as 64 °F, but 64 °F = 17.78 °C is rejected while 65 °F = 18.33 °C is accepted). The resulting setpoint is at most 1 °F off the absolute extreme, which is immaterial since comfort is driven by fan speed.
 - Fan speed while cooling follows the cooling tiers (CC-7) via climate `fan_mode` or the companion `ac_fan`.
 
 ## Heating control — split rooms
 
-- **CC-10** Decision: if **Use heater** on **and** room < target_heating → **Heat** (setpoint = target_heating, truncated). Else if the heater is fan-capable and (Use heater on **or** fan-only override applies) → **Fan Only**. Else → **Off**.
+- **CC-10** Decision: if **Use heater** on **and** the room is past the heating threshold (CC-27 hysteresis against target_heating) → **Heat** (setpoint = target_heating, truncated). Else if the heater is fan-capable and (Use heater on **or** fan-only override applies) → **Fan Only**. Else → **Off**.
 - Fan speed while heating/fan-only follows the heating tiers (CC-7).
 
 ## Combined heat-pump control
 
-- **CC-11** A combined climate picks one decision for the single entity: **Cool** (Use A/C on & room > target_cooling), **Heat** (Use heater on & room < target_heating), **Fan Only** (when an override/native-fan condition holds), else **Off**. Setpoint is the heating target when heating, otherwise the cooling floor (CC-9). For a combined device, **fan-only override is offered for cooling only** (CC-12).
+- **CC-11** A combined climate picks one decision for the single entity: **Cool** (Use A/C on & room past the cooling threshold), **Heat** (Use heater on & room past the heating threshold), **Fan Only** (when an override/native-fan condition holds), else **Off**. Both thresholds use the CC-27 hysteresis, keyed on the single entity's reported mode (`cool`/`heat`). Setpoint is the heating target when heating, otherwise the cooling floor (CC-9). For a combined device, **fan-only override is offered for cooling only** (CC-12).
 
 ## Fan-only override
 
@@ -74,7 +79,7 @@ Speed is a 3-tier function of how far the room is past the target:
 
 ## Standalone fan control
 
-- **CC-13** The fan runs when **Use fan** on **and** room > target_fan; otherwise it's turned off.
+- **CC-13** The fan runs when **Use fan** on **and** the room is past the fan threshold (CC-27 cooling-style hysteresis against target_fan); otherwise it's turned off.
 - **CC-14** While on, speed follows the cooling-style tiers (CC-7) against `target_fan` + fan offsets, mapped to 10/50/100% or the fan's preset modes.
 
 ## Standalone fan direction

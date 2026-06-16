@@ -11,7 +11,7 @@ unit-testable with plain ``python3``.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from .fan_logic import cooling_speed, heating_speed, match_fan_mode
 
@@ -27,6 +27,28 @@ FORWARD = "forward"
 REVERSE = "reverse"
 
 _OFF_LIKE = frozenset({"off", "unavailable", "unknown", "none", "", None})
+
+# Hysteresis deadband (CC-27): the on/off decision is *not* a bare truncated
+# threshold. Once a device is conditioning it keeps going until the room comes
+# within HYSTERESIS_OFF of the target; once stopped it does not restart until
+# the room passes the next whole degree past the target. The device's reported
+# running mode (COOL/HEAT/fan on) is the hysteresis state — the engine stays
+# stateless. Setpoints and fan-speed tiers still truncate (CC-5).
+HYSTERESIS_OFF: Final = 0.2
+
+
+def _wants_cool(room: float, target: float, running: bool) -> bool:  # noqa: FBT001
+    """Cooling-style hysteresis (CC-27): hold near target, restart a degree past it."""
+    if running:
+        return room > target + HYSTERESIS_OFF
+    return room >= target + 1.0
+
+
+def _wants_heat(room: float, target: float, running: bool) -> bool:  # noqa: FBT001
+    """Heating hysteresis (CC-27): mirror of :func:`_wants_cool`."""
+    if running:
+        return room < target - HYSTERESIS_OFF
+    return room <= target - 1.0
 
 
 def any_window_open(states: Iterable[str | None]) -> bool:
@@ -184,8 +206,11 @@ class EngineInputs:
 
     @property
     def fan_needs_on(self) -> bool:
-        """Return True when the standalone fan should run."""
-        return self.use_fan and int(self.room_temp) > int(self.target_fan)
+        """Whether the standalone fan should run (CC-27 cooling-style hysteresis)."""
+        if not self.use_fan:
+            return False
+        running = self.fan is not None and self.fan.is_on
+        return _wants_cool(self.room_temp, self.target_fan, running)
 
 
 # ---------------------------------------------------------------------------
@@ -330,10 +355,15 @@ def compute_commands(inp: EngineInputs) -> list[Command]:
 def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
     ac = inp.ac
     assert ac is not None
-    room = int(inp.room_temp)
-    needs_cool = inp.use_ac and not inp.window_open and room > int(inp.target_cooling)
+    needs_cool = (
+        inp.use_ac
+        and not inp.window_open
+        and _wants_cool(inp.room_temp, inp.target_cooling, ac.hvac_mode == COOL)
+    )
     needs_heat = (
-        inp.use_heater and not inp.window_open and room < int(inp.target_heating)
+        inp.use_heater
+        and not inp.window_open
+        and _wants_heat(inp.room_temp, inp.target_heating, ac.hvac_mode == HEAT)
     )
     uses_disabled = not inp.use_ac and not inp.use_heater
     ac_override_fan_only = (
@@ -417,7 +447,7 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
     needs_cool = (
         inp.use_ac
         and not inp.window_open
-        and int(inp.room_temp) > int(inp.target_cooling)
+        and _wants_cool(inp.room_temp, inp.target_cooling, ac.hvac_mode == COOL)
     )
     override_fan_only = (
         inp.ac_fan_only_override
@@ -474,7 +504,7 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
     needs_heat = (
         inp.use_heater
         and not inp.window_open
-        and int(inp.room_temp) < int(inp.target_heating)
+        and _wants_heat(inp.room_temp, inp.target_heating, heater.hvac_mode == HEAT)
     )
     native_fan_only = inp.use_heater and not needs_heat and heater.has_fan
     override_fan_only = (

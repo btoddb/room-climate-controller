@@ -113,10 +113,14 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
-      - name: Stage model-logging helper
-        # Copy the helper out of the worktree: the action may switch the
-        # checkout to a PR branch that doesn't contain this script.
-        run: cp .github/scripts/log-model.sh "$RUNNER_TEMP/log-model.sh"
+      - name: Stage CI helper scripts
+        # Copy helpers out of the worktree (into RUNNER_TEMP, which is outside
+        # the git workspace) BEFORE the action runs. The action may switch the
+        # checkout to a PR branch with a different/missing copy, or run
+        # `git clean`; staging from the initial (default-branch) checkout means
+        # CI always runs main's version of these scripts, never PR-controlled
+        # code, regardless of the PR branch.
+        run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -130,7 +134,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
-        run: bash "$RUNNER_TEMP/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Response"
+        run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Response"
 
   # Planning phase: Opus reads the codebase and posts a plan comment. It does NOT
   # write code. The job then inspects the plan comment to decide whether
@@ -151,8 +155,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
-      - name: Stage model-logging helper
-        run: cp .github/scripts/log-model.sh "$RUNNER_TEMP/log-model.sh"
+      - name: Stage CI helper scripts
+        run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
       - name: Plan (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -172,7 +176,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
-        run: bash "$RUNNER_TEMP/log-model.sh" "${{ github.event.issue.number }}" "Planning"
+        run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number }}" "Planning"
       - name: Decide whether to auto-implement
         id: gate
         env:
@@ -238,9 +242,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0 # full history so a feature branch + PR can be created
-      - name: Stage model-logging helper
+      - name: Stage CI helper scripts
         if: steps.check_plan.outputs.has_plan == 'true'
-        run: cp .github/scripts/log-model.sh "$RUNNER_TEMP/log-model.sh"
+        run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
       - name: Implement (Sonnet)
         id: claude
         if: steps.check_plan.outputs.has_plan == 'true'
@@ -270,4 +274,4 @@ jobs:
               --json number --jq '.[0].number // ""')"
             [ -n "$pr" ] && target="$pr"
           fi
-          bash "$RUNNER_TEMP/log-model.sh" "$target" "Implementation"
+          bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "$target" "Implementation"

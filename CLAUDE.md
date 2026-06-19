@@ -21,6 +21,38 @@ Every directory under `custom_components/` **except `room_climate_controller`** 
 `scripts/lint` — leaves changes under one of these directories, revert them; never
 commit a diff outside `room_climate_controller`.
 
+## GitHub Workflow
+
+### Planning (Opus)
+- For every new issue, Opus must read the codebase and generate a structural implementation plan before making any code changes.
+- Ensure the plan is clear and outlines the required steps.
+
+### Implementation (Sonnet)
+- Sonnet should execute the approved plan strictly.
+- **constraint** **NEVER** work on main.  Create a new branch for the changes
+- Implement the code and cut a Pull Request (PR) referencing the original issue
+
+#### What Not to Commit
+- Build artifacts, generated bundles, and compiled outputs (unless the project explicitly tracks them).
+- Dependency and cache directories: `node_modules/`, `__pycache__/`, `.venv/`, and equivalents.
+- OS-generated files (`.DS_Store`, `Thumbs.db`) and editor swap/lock files.
+
+#### Security
+- **constraint** Never commit secrets, API keys, credentials, `.env` files, or private config — not even in test or scratch branches.
+- **constraint** Flag any security vulnerability (XSS, SQL injection, command injection, etc.) and fix it before reporting the task complete.
+
+### Review (Opus)
+- **constraint** On any new PR, Opus should perform a line-by-line review.
+- Add specific, actionable comments in the PR.
+- Stop, wait, and request explicit human approval before attempting any fixes or merges.
+- **constraint** If you are asked to review a PR, **NEVER** make changes to the code base.  You are free to add comments with snippets of suggested code.
+
+If you leave a comment on the PR, and it is more than just a comment, tag each comment with one of the following:
+- [REQUIRED]: A critical issue that must be fixed before approval
+- [QUESTION]: Asking for clarification on why an implementation was chosen
+- [NIT]: Minor styling, naming choices, or optional micro-optimizations that won't hold up approval
+- [PRAISE]: Highlighting particularly clean, clever, or well-written sections of code
+
 ## Implementation details
 
 - **Python version:** target python version 3.14 or newer

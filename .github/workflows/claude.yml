@@ -162,27 +162,11 @@ jobs:
           fetch-depth: 1
       - name: Stage CI helper scripts
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
-      - name: Preflight - validate the OAuth token
-        # TEMPORARY diagnostic: review still errors instantly at $0 even with the
-        # OAuth token set. This validates the token the way Claude Code does
-        # (Bearer + oauth beta header) and prints only HTTP status + error TYPE
-        # (token stays in a header, GitHub-redacted; no message content). 200 =>
-        # token works, look elsewhere; 401/403 => bad/ineligible token. Remove
-        # once the cause is confirmed.
-        env:
-          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-        run: |
-          code="$(curl -sS -o /tmp/pf.json -w '%{http_code}' \
-            https://api.anthropic.com/v1/messages \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "anthropic-version: 2023-06-01" \
-            -H "anthropic-beta: oauth-2025-04-20" \
-            -H "content-type: application/json" \
-            -d '{"model":"claude-opus-4-8","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}')"
-          echo "HTTP status: $code"
-          echo "error.type: $(jq -r '.error.type // "none"' /tmp/pf.json)"
-          echo "error.message: $(jq -r '.error.message // "none"' /tmp/pf.json)"
-          echo "stop_reason: $(jq -r '.stop_reason // "none"' /tmp/pf.json)"
+      # No custom `prompt`: that puts the action in agent mode, which does not
+      # create the tracking comment, so Claude's review is never posted. Running
+      # in tag mode (responding to the "@claude review" comment) posts the result
+      # as a comment. Review behavior is driven by the "Review (Opus)" section of
+      # CLAUDE.md, which tag mode reads.
       - name: Review (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -190,17 +174,6 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-4-8
-          prompt: |
-            Perform a line-by-line review of this pull request, following the
-            "Review (Opus)" section of CLAUDE.md. Add specific, actionable
-            comments and tag each with [REQUIRED], [QUESTION], [NIT], or
-            [PRAISE]. You may include suggested code snippets in comments, but
-            do NOT modify the code base, push commits, or merge.
-
-            ALWAYS conclude by posting a summary comment on the PR — never finish
-            silently. If you found no issues, say so clearly and warmly: name
-            what you reviewed and explain specifically why it's solid, rather
-            than a bare "LGTM". Then stop and wait for explicit human approval.
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:

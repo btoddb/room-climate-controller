@@ -80,6 +80,7 @@ implementation. This is automatic; you don't need to report your own model.
 ### Review (Opus)
 - **constraint** On any new PR, Opus should perform a line-by-line review.
 - Add specific, actionable comments in the PR.
+- **constraint** Always **post your review as a PR comment** — never finish silently. Even when you find nothing to flag, post a short, warm summary that names what you reviewed and explains specifically why it's solid (not a bare "LGTM").
 - Stop, wait, and request explicit human approval before attempting any fixes or merges.
 - **constraint** If you are asked to review a PR, **NEVER** make changes to the code base.  You are free to add comments with snippets of suggested code.
 

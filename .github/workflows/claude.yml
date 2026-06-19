@@ -38,12 +38,19 @@ jobs:
         with:
           fetch-depth: 1
       - name: Run Claude Code
+        id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Review -> Opus; follow-up comments -> Sonnet.
           claude_args: |
             --model ${{ github.event_name == 'pull_request_review' && 'claude-opus-4-8' || 'claude-sonnet-4-6' }}
+      - name: Log actual model used
+        if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: bash .github/scripts/log-model.sh "${{ github.event.issue.number || github.event.pull_request.number }}" "Response"
 
   # Phase 1 of the new-issue pipeline: Opus reads the codebase and posts a plan.
   # It does NOT write code. The job then inspects the plan comment to decide
@@ -64,6 +71,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: Plan (Opus)
+        id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -81,6 +89,12 @@ jobs:
             If you have any [QUESTION] items, do NOT include the proceed marker;
             instead @-mention @btoddb in the comment so they are notified to
             answer.
+      - name: Log actual model used
+        if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: bash .github/scripts/log-model.sh "${{ github.event.issue.number }}" "Planning"
       - name: Decide whether to auto-implement
         id: gate
         env:
@@ -122,6 +136,7 @@ jobs:
         with:
           fetch-depth: 0 # full history so a feature branch + PR can be created
       - name: Implement (Sonnet)
+        id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -134,3 +149,18 @@ jobs:
             NEVER commit to main: create a feature branch, implement the change,
             run the project's lint and tests, and open a Pull Request that
             references this issue.
+      - name: Log actual model used
+        if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          BRANCH_NAME: ${{ steps.claude.outputs.branch_name }}
+        run: |
+          # Prefer commenting on the PR this phase opened; fall back to the issue.
+          target="${{ github.event.issue.number }}"
+          if [ -n "$BRANCH_NAME" ]; then
+            pr="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH_NAME" \
+              --json number --jq '.[0].number // ""')"
+            [ -n "$pr" ] && target="$pr"
+          fi
+          bash .github/scripts/log-model.sh "$target" "Implementation"

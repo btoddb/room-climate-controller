@@ -37,6 +37,11 @@ The plan→implement handoff is a job dependency inside one run, not a re-trigge
 GitHub will not start a new workflow run from a comment the action posts with
 `GITHUB_TOKEN`, so the pipeline is chained via `needs:` instead.
 
+After each phase, the workflow posts a short comment recording the **actual**
+model id the API reported for that run (read from the action's execution log,
+not the requested `--model`) — on the issue for planning, on the PR for
+implementation. This is automatic; you don't need to report your own model.
+
 ### Planning (Opus)
 - For every new issue, Opus must read the codebase and generate a structural implementation plan before making any code changes.
 - Ensure the plan is clear and outlines the required steps.

@@ -58,11 +58,15 @@ implementation. This is automatic; you don't need to report your own model.
 - For every new issue, Opus must read the codebase and generate a structural implementation plan before making any code changes.
 - Ensure the plan is clear and outlines the required steps.
 - **constraint** Opus must post the completed plan **as a comment on the issue** — this is the only thing that carries the plan to the implementation job.
-- **constraint** Every plan comment must include the exact line `<!-- claude:plan -->` so it can be located later. A plan **revision** is posted as a **new** comment carrying the same marker — never silently rewrite history. The pipeline always uses the **most recent** `claude:plan` comment.
-- **The latest plan comment is also the gate for auto-implementation:**
-  - If you have **zero `[QUESTION]` items**, also include the exact line `<!-- claude:proceed -->`. The `implement` job finds the latest plan comment, sees this marker, and Sonnet implements the plan and opens the PR automatically — no human step required.
-  - If you have **any `[QUESTION]` items**, do **not** include the proceed marker. Instead `@btoddb` in the comment so they are notified to answer. Implementation stays parked until a newer plan comment is posted with the proceed marker.
-  - For an **`@claude plan`** (plan-only) request, post the plan with the `<!-- claude:plan -->` marker but **omit `<!-- claude:proceed -->`** — planning only, never auto-implement.
+- **constraint** Every plan comment must contain the **literal text** `<!-- claude:plan -->` **somewhere in the raw comment body, written out exactly as shown — not described, paraphrased, or summarized in prose** (e.g. do *not* write "no proceed marker, so this won't auto-implement" instead of the marker — that sentence is invisible to the automation). A plain-text `grep` over the comment body is what finds your plan; if the literal substring isn't there, the pipeline cannot find it and `@claude implement` will fail with "no plan to build" even though you wrote a perfectly good plan. Put it on its own line, typically at the end of the comment:
+  ```
+  <!-- claude:plan -->
+  ```
+  A plan **revision** is posted as a **new** comment carrying the same literal marker — never silently rewrite history. The pipeline always uses the **most recent** comment containing this exact substring.
+- **The latest plan comment is also the gate for auto-implementation — same rule, the marker must be the literal substring:**
+  - If you have **zero `[QUESTION]` items**, also write the literal line `<!-- claude:proceed -->` (in addition to `<!-- claude:plan -->`, on its own line). The `implement` job greps the latest plan comment for this exact substring, and Sonnet implements the plan and opens the PR automatically — no human step required.
+  - If you have **any `[QUESTION]` items**, do **not** write the proceed marker. Instead `@btoddb` in the comment so they are notified to answer. Implementation stays parked until a newer plan comment is posted with the literal proceed marker.
+  - For an **`@claude plan`** (plan-only) request, write the literal `<!-- claude:plan -->` marker but **omit `<!-- claude:proceed -->`** — planning only, never auto-implement.
 - **constraint** When re-planning (any `@claude plan` after an earlier plan comment exists), read the full issue thread first: find the prior `<!-- claude:plan -->` comment's `[QUESTION]` items and check later comments for answers to them. Resolve answered questions in the revision instead of re-asking — only re-raise a `[QUESTION]` if it's genuinely still unanswered or unresolved.
 
 ### Implementation (Sonnet)

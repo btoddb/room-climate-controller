@@ -63,6 +63,7 @@ implementation. This is automatic; you don't need to report your own model.
   - If you have **zero `[QUESTION]` items**, also include the exact line `<!-- claude:proceed -->`. The `implement` job finds the latest plan comment, sees this marker, and Sonnet implements the plan and opens the PR automatically — no human step required.
   - If you have **any `[QUESTION]` items**, do **not** include the proceed marker. Instead `@btoddb` in the comment so they are notified to answer. Implementation stays parked until a newer plan comment is posted with the proceed marker.
   - For an **`@claude plan`** (plan-only) request, post the plan with the `<!-- claude:plan -->` marker but **omit `<!-- claude:proceed -->`** — planning only, never auto-implement.
+- **constraint** When re-planning (any `@claude plan` after an earlier plan comment exists), read the full issue thread first: find the prior `<!-- claude:plan -->` comment's `[QUESTION]` items and check later comments for answers to them. Resolve answered questions in the revision instead of re-asking — only re-raise a `[QUESTION]` if it's genuinely still unanswered or unresolved.
 
 ### Implementation (Sonnet)
 - Sonnet should execute the approved plan strictly. The plan is the **most recent comment containing `<!-- claude:plan -->`** — use it as the source of truth.

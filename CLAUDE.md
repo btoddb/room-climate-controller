@@ -23,9 +23,28 @@ commit a diff outside `room_climate_controller`.
 
 ## GitHub Workflow
 
+`.github/workflows/claude.yml` selects the model per job, so each phase below
+runs on the model named here automatically — you do not (and cannot) switch
+models yourself mid-run:
+
+- **New issue** opened/assigned → planning → **Opus**, which then hands off to…
+- …**implementation** → **Sonnet**, *in the same workflow run*, but only if the
+  plan had no open questions (see Planning below).
+- **PR review** submitted → review → **Opus**
+- **Follow-up comments** (issue or PR review comments) → **Sonnet**
+
+The plan→implement handoff is a job dependency inside one run, not a re-trigger:
+GitHub will not start a new workflow run from a comment the action posts with
+`GITHUB_TOKEN`, so the pipeline is chained via `needs:` instead.
+
 ### Planning (Opus)
 - For every new issue, Opus must read the codebase and generate a structural implementation plan before making any code changes.
 - Ensure the plan is clear and outlines the required steps.
+- **constraint** Opus must post the completed plan **as a comment on the issue** — this is the only thing that carries the plan to the implementation job.
+- **constraint** Every plan comment must include the exact line `<!-- claude:plan -->` so it can be located later. A plan **revision** is posted as a **new** comment carrying the same marker — never silently rewrite history. The pipeline always uses the **most recent** `claude:plan` comment.
+- **The latest plan comment is also the gate for auto-implementation:**
+  - If you have **zero `[QUESTION]` items**, also include the exact line `<!-- claude:proceed -->`. The `implement` job finds the latest plan comment, sees this marker, and Sonnet implements the plan and opens the PR automatically — no human step required.
+  - If you have **any `[QUESTION]` items**, do **not** include the proceed marker. Instead `@btoddb` in the comment so they are notified to answer. Implementation stays parked until a newer plan comment is posted with the proceed marker.
 
 ### Implementation (Sonnet)
 - Sonnet should execute the approved plan strictly.

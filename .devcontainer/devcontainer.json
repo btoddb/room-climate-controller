@@ -46,7 +46,7 @@
             "version": "lts"
         },
         "ghcr.io/devcontainers/features/python:1": {
-            // minimum for room-climate-controller is 3.13, but using 3.14 for development
+            // minimum for room-climate-controller is 3.14
             "version": "3.14"
         },
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {

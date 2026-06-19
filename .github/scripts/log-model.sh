@@ -14,9 +14,11 @@ model="unknown"
 if [ -n "${EXECUTION_FILE:-}" ] && [ -f "$EXECUTION_FILE" ]; then
   # The execution log's schema isn't formally documented, so be defensive:
   # slurp the whole file (-s handles both a JSON array and newline-delimited
-  # JSON) and recursively take the last `model` field — the id the API returns
-  # on each response. Falls back to "unknown" if the shape differs.
-  found="$(jq -rs '([.. | objects | select(has("model")) | .model] | last) // empty' \
+  # JSON) and recursively take the last real `model` field — the id the API
+  # returns on each response. The SDK tags locally-generated messages with the
+  # model "<synthetic>"; ignore those (and anything not a claude-* id) so we
+  # report the actual API model, not a synthetic stub. Falls back to "unknown".
+  found="$(jq -rs '([.. | objects | select(has("model")) | .model | select(startswith("claude"))] | last) // empty' \
     "$EXECUTION_FILE" 2>/dev/null || true)"
   [ -n "$found" ] && model="$found"
 fi

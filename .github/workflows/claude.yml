@@ -162,6 +162,27 @@ jobs:
           fetch-depth: 1
       - name: Stage CI helper scripts
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
+      - name: Preflight - validate the OAuth token
+        # TEMPORARY diagnostic: review still errors instantly at $0 even with the
+        # OAuth token set. This validates the token the way Claude Code does
+        # (Bearer + oauth beta header) and prints only HTTP status + error TYPE
+        # (token stays in a header, GitHub-redacted; no message content). 200 =>
+        # token works, look elsewhere; 401/403 => bad/ineligible token. Remove
+        # once the cause is confirmed.
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          code="$(curl -sS -o /tmp/pf.json -w '%{http_code}' \
+            https://api.anthropic.com/v1/messages \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "anthropic-beta: oauth-2025-04-20" \
+            -H "content-type: application/json" \
+            -d '{"model":"claude-opus-4-8","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}')"
+          echo "HTTP status: $code"
+          echo "error.type: $(jq -r '.error.type // "none"' /tmp/pf.json)"
+          echo "error.message: $(jq -r '.error.message // "none"' /tmp/pf.json)"
+          echo "stop_reason: $(jq -r '.stop_reason // "none"' /tmp/pf.json)"
       - name: Review (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1

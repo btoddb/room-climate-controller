@@ -132,7 +132,7 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Review -> Opus; follow-up comments -> Sonnet.
           claude_args: |
             --model ${{ github.event_name == 'pull_request_review' && 'claude-opus-4-8' || 'claude-sonnet-4-6' }}
@@ -162,30 +162,11 @@ jobs:
           fetch-depth: 1
       - name: Stage CI helper scripts
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
-      - name: Preflight - can the API key reach Opus?
-        # TEMPORARY diagnostic: an @claude review on PR #23 errored instantly at
-        # $0 cost with no output. The model id is correct, so this checks whether
-        # the key is actually authorized for claude-opus-4-8. Prints only the
-        # HTTP status and error TYPE — the key stays in a header (GitHub-redacted)
-        # and no message content is printed. Remove once the cause is confirmed.
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          code="$(curl -sS -o /tmp/preflight.json -w '%{http_code}' \
-            https://api.anthropic.com/v1/messages \
-            -H "x-api-key: $ANTHROPIC_API_KEY" \
-            -H "anthropic-version: 2023-06-01" \
-            -H "content-type: application/json" \
-            -d '{"model":"claude-opus-4-8","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}')"
-          echo "Anthropic API HTTP status: $code"
-          echo "error.type: $(jq -r '.error.type // "none"' /tmp/preflight.json)"
-          echo "error.message: $(jq -r '.error.message // "none"' /tmp/preflight.json)"
-          echo "model echoed: $(jq -r '.model // "none"' /tmp/preflight.json)"
       - name: Review (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-4-8
           prompt: |
@@ -231,7 +212,7 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-4-8
           prompt: |
@@ -320,7 +301,7 @@ jobs:
         if: steps.check_plan.outputs.has_plan == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-sonnet-4-6
           prompt: |

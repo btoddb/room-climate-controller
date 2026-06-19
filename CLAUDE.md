@@ -32,11 +32,14 @@ fixed per phase (you do not, and cannot, switch models yourself mid-run):
 | New issue body/title, or any issue comment | `@claude` | Full pipeline: **plan (Opus)** → **implement (Sonnet)** if the plan has no open questions |
 | New issue body/title, or any issue comment | `@claude plan` | **Planning only (Opus)** — posts the plan as a comment, never implements |
 | Any issue comment | `@claude implement` | **Implementation only (Sonnet)** — skips planning, implements the latest `<!-- claude:plan -->` comment and opens a PR |
+| PR comment / PR review | `@claude review` | **Line-by-line review (Opus)** — posts tagged comments; cannot change code (`contents` is read-only) |
 | PR comment / PR review | `@claude` | Conversational reply — **Opus** for a submitted review, **Sonnet** for follow-up comments |
 
 The subcommand is the word immediately after `@claude`; bare `@claude` defaults to
 the full pipeline. `@claude implement` bypasses the no-questions gate — it's an
-explicit instruction to build the most recent plan as-is.
+explicit instruction to build the most recent plan as-is. `@claude plan` /
+`@claude implement` are issue-only and `@claude review` is PR-only; a subcommand
+used in the wrong context falls back to that context's bare-`@claude` behavior.
 
 So planning is no longer tied to issue-open: commenting `@claude` (or `@claude
 plan`) on an already-open issue triggers it too. Adding more parameters later is

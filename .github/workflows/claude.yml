@@ -26,9 +26,11 @@ jobs:
   #   @claude plan       -> planning only; the plan is posted as a comment
   #   @claude implement  -> skip planning; implement the latest plan comment and
   #                         open a PR (issue context)
+  #   @claude review     -> line-by-line PR review on Opus; comments only, no
+  #                         code changes (PR context)
   #
   # Outputs:
-  #   route      = plan | implement | respond | skip
+  #   route      = plan | implement | review | respond | skip
   #   plan_only  = true  | false   (suppresses the implement phase)
   dispatch:
     if: |
@@ -78,8 +80,13 @@ jobs:
           plan_only=false
           if printf '%s' "$text" | grep -qi '@claude'; then
             if [ "$is_pr" = true ]; then
-              # PRs stay conversational (review / follow-up implementation help).
-              route=respond
+              # PR context: "@claude review" runs a review; anything else is a
+              # conversational reply / follow-up implementation help.
+              if printf '%s' "$text" | grep -qiE '@claude[[:space:]]+review([[:space:]]|$)'; then
+                route=review
+              else
+                route=respond
+              fi
             # New issue or issue comment -> planning pipeline by default. A
             # subcommand word right after @claude selects a phase.
             elif printf '%s' "$text" | grep -qiE '@claude[[:space:]]+plan([[:space:]]|$)'; then
@@ -135,6 +142,46 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Response"
+
+  # Review phase: Opus performs a line-by-line PR review. `contents` is read-only
+  # so the job structurally cannot change code — it only posts review comments.
+  review:
+    needs: dispatch
+    if: needs.dispatch.outputs.route == 'review'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Stage CI helper scripts
+        run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
+      - name: Review (Opus)
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model claude-opus-4-8
+          prompt: |
+            Perform a line-by-line review of this pull request, following the
+            "Review (Opus)" section of CLAUDE.md. Add specific, actionable
+            comments and tag each with [REQUIRED], [QUESTION], [NIT], or
+            [PRAISE]. You may include suggested code snippets in comments, but
+            do NOT modify the code base, push commits, or merge. Stop after
+            commenting and wait for explicit human approval.
+      - name: Log actual model used
+        if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Review"
 
   # Planning phase: Opus reads the codebase and posts a plan comment. It does NOT
   # write code. The job then inspects the plan comment to decide whether

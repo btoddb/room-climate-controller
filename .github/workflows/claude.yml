@@ -162,6 +162,25 @@ jobs:
           fetch-depth: 1
       - name: Stage CI helper scripts
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
+      - name: Preflight - can the API key reach Opus?
+        # TEMPORARY diagnostic: an @claude review on PR #23 errored instantly at
+        # $0 cost with no output. The model id is correct, so this checks whether
+        # the key is actually authorized for claude-opus-4-8. Prints only the
+        # HTTP status and error TYPE — the key stays in a header (GitHub-redacted)
+        # and no message content is printed. Remove once the cause is confirmed.
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          code="$(curl -sS -o /tmp/preflight.json -w '%{http_code}' \
+            https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d '{"model":"claude-opus-4-8","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}')"
+          echo "Anthropic API HTTP status: $code"
+          echo "error.type: $(jq -r '.error.type // "none"' /tmp/preflight.json)"
+          echo "error.message: $(jq -r '.error.message // "none"' /tmp/preflight.json)"
+          echo "model echoed: $(jq -r '.model // "none"' /tmp/preflight.json)"
       - name: Review (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -174,8 +193,12 @@ jobs:
             "Review (Opus)" section of CLAUDE.md. Add specific, actionable
             comments and tag each with [REQUIRED], [QUESTION], [NIT], or
             [PRAISE]. You may include suggested code snippets in comments, but
-            do NOT modify the code base, push commits, or merge. Stop after
-            commenting and wait for explicit human approval.
+            do NOT modify the code base, push commits, or merge.
+
+            ALWAYS conclude by posting a summary comment on the PR — never finish
+            silently. If you found no issues, say so clearly and warmly: name
+            what you reviewed and explain specifically why it's solid, rather
+            than a bare "LGTM". Then stop and wait for explicit human approval.
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:

@@ -18,13 +18,89 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Human-driven @claude on existing comments / PR reviews. Review work runs on
-  # Opus; iterative follow-up comments run on Sonnet.
-  respond:
+  # Parse the @claude command once and route the rest of the pipeline.
+  #
+  # Commands (the text that mentions @claude):
+  #   @claude            -> full pipeline: plan, then implement if no questions
+  #                         (issue context); conversational reply (PR context)
+  #   @claude plan       -> planning only; the plan is posted as a comment
+  #   @claude implement  -> skip planning; implement the latest plan comment and
+  #                         open a PR (issue context)
+  #
+  # Outputs:
+  #   route      = plan | implement | respond | skip
+  #   plan_only  = true  | false   (suppresses the implement phase)
+  dispatch:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
+      contains(github.event.comment.body, '@claude') ||
+      contains(github.event.review.body, '@claude') ||
+      contains(github.event.issue.body, '@claude') ||
+      contains(github.event.issue.title, '@claude')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      route: ${{ steps.route.outputs.route }}
+      plan_only: ${{ steps.route.outputs.plan_only }}
+    steps:
+      - name: Route the @claude command
+        id: route
+        # Trigger text is passed via env (NOT interpolated into the script) and
+        # always quoted, so a malicious issue/comment body can't inject shell.
+        env:
+          EVENT: ${{ github.event_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          PR_URL: ${{ github.event.issue.pull_request.url }}
+        run: |
+          set -euo pipefail
+
+          # The text carrying the command, per event type.
+          case "$EVENT" in
+            issues)                      text="$ISSUE_TITLE $ISSUE_BODY" ;;
+            issue_comment)               text="$COMMENT_BODY" ;;
+            pull_request_review)         text="$REVIEW_BODY" ;;
+            pull_request_review_comment) text="$COMMENT_BODY" ;;
+            *)                           text="" ;;
+          esac
+
+          # Is this a PR context? PR comments carry an issue.pull_request.url;
+          # review events are PRs by definition.
+          is_pr=false
+          case "$EVENT" in
+            pull_request_review|pull_request_review_comment) is_pr=true ;;
+            issue_comment) if [ -n "$PR_URL" ]; then is_pr=true; fi ;;
+          esac
+
+          route=skip
+          plan_only=false
+          if printf '%s' "$text" | grep -qi '@claude'; then
+            if [ "$is_pr" = true ]; then
+              # PRs stay conversational (review / follow-up implementation help).
+              route=respond
+            # New issue or issue comment -> planning pipeline by default. A
+            # subcommand word right after @claude selects a phase.
+            elif printf '%s' "$text" | grep -qiE '@claude[[:space:]]+plan([[:space:]]|$)'; then
+              route=plan
+              plan_only=true
+            elif printf '%s' "$text" | grep -qiE '@claude[[:space:]]+implement([[:space:]]|$)'; then
+              route=implement
+            else
+              route=plan
+            fi
+          fi
+
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "plan_only=$plan_only" >> "$GITHUB_OUTPUT"
+          echo "Routed event '$EVENT' (is_pr=$is_pr) -> route=$route plan_only=$plan_only"
+
+  # Conversational @claude on a PR (review work on Opus, follow-up comments on
+  # Sonnet).
+  respond:
+    needs: dispatch
+    if: needs.dispatch.outputs.route == 'respond'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -52,18 +128,19 @@ jobs:
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: bash .github/scripts/log-model.sh "${{ github.event.issue.number || github.event.pull_request.number }}" "Response"
 
-  # Phase 1 of the new-issue pipeline: Opus reads the codebase and posts a plan.
-  # It does NOT write code. The job then inspects the plan comment to decide
-  # whether implementation may proceed automatically.
+  # Planning phase: Opus reads the codebase and posts a plan comment. It does NOT
+  # write code. The job then inspects the plan comment to decide whether
+  # implementation may proceed automatically.
   plan:
-    if: github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))
+    needs: dispatch
+    if: needs.dispatch.outputs.route == 'plan'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
       id-token: write
     outputs:
-      # 'true' only when Opus's plan comment carries the no-questions marker.
+      # 'true' only when the latest plan comment carries the no-questions marker.
       proceed: ${{ steps.gate.outputs.proceed }}
     steps:
       - name: Checkout repository
@@ -78,17 +155,12 @@ jobs:
           claude_args: |
             --model claude-opus-4-8
           prompt: |
-            A new issue was opened. Read the codebase and produce a structural
-            implementation plan, following the "GitHub Workflow" section of
-            CLAUDE.md. Post the plan as a comment on this issue, and include the
-            exact line `<!-- claude:plan -->` in it so the comment can be found
-            later. Do NOT write any code in this run.
-
-            If you have zero [QUESTION] items, also include the exact line
-            `<!-- claude:proceed -->` to authorize automatic implementation.
-            If you have any [QUESTION] items, do NOT include the proceed marker;
-            instead @-mention @btoddb in the comment so they are notified to
-            answer.
+            Read the codebase and produce a structural implementation plan for
+            this issue, following the "GitHub Workflow" section of CLAUDE.md.
+            Post the plan as a comment on this issue, and include the exact line
+            `<!-- claude:plan -->` in it so the comment can be found later. Do
+            NOT write any code in this run.
+            ${{ needs.dispatch.outputs.plan_only == 'true' && 'This is a plan-only request: stop after posting the plan and do NOT include the proceed marker.' || 'If you have zero [QUESTION] items, also include the exact line `<!-- claude:proceed -->` to authorize automatic implementation. If you have any [QUESTION] items, do NOT include the proceed marker; instead @-mention @btoddb in the comment so they are notified to answer.' }}
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:
@@ -117,12 +189,16 @@ jobs:
             echo "proceed=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # Phase 2 of the new-issue pipeline: Sonnet implements the approved plan and
-  # opens the PR. Runs in the same workflow run as `plan`, only when the plan
-  # left no open questions.
+  # Implementation phase: Sonnet implements the latest plan comment and opens the
+  # PR. Fires either as the auto-handoff after `plan` (a full @claude command
+  # whose plan left no open questions) or directly via @claude implement.
   implement:
-    needs: plan
-    if: needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true'
+    needs: [dispatch, plan]
+    if: >-
+      ${{ !cancelled() && (
+        needs.dispatch.outputs.route == 'implement' ||
+        (needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true' && needs.dispatch.outputs.plan_only == 'false')
+      ) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -131,12 +207,34 @@ jobs:
       id-token: write
       actions: read
     steps:
+      - name: Ensure a plan exists
+        id: check_plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Implementation needs a plan to build. (For the auto-handoff path the
+          # plan was just posted; this mainly guards a direct @claude implement.)
+          body="$(gh issue view "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --json comments \
+            --jq '[.comments[] | select(.body | contains("claude:plan"))] | last | .body // ""')"
+          if [ -z "$body" ]; then
+            echo "No plan comment found; skipping implementation."
+            gh issue comment "${{ github.event.issue.number }}" \
+              --repo "${{ github.repository }}" \
+              --body "🤖 \`@claude implement\` found no plan to build. Run \`@claude plan\` first, or \`@claude\` for the full pipeline."
+            echo "has_plan=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_plan=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Checkout repository
+        if: steps.check_plan.outputs.has_plan == 'true'
         uses: actions/checkout@v6
         with:
           fetch-depth: 0 # full history so a feature branch + PR can be created
       - name: Implement (Sonnet)
         id: claude
+        if: steps.check_plan.outputs.has_plan == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

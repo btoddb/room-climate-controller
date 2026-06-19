@@ -23,15 +23,24 @@ commit a diff outside `room_climate_controller`.
 
 ## GitHub Workflow
 
-`.github/workflows/claude.yml` selects the model per job, so each phase below
-runs on the model named here automatically — you do not (and cannot) switch
-models yourself mid-run:
+`.github/workflows/claude.yml` is driven by **`@claude` commands**. A `dispatch`
+job parses the text that mentions `@claude` and routes the run; the model is then
+fixed per phase (you do not, and cannot, switch models yourself mid-run):
 
-- **New issue** opened/assigned → planning → **Opus**, which then hands off to…
-- …**implementation** → **Sonnet**, *in the same workflow run*, but only if the
-  plan had no open questions (see Planning below).
-- **PR review** submitted → review → **Opus**
-- **Follow-up comments** (issue or PR review comments) → **Sonnet**
+| Where you write it | Command | What runs |
+| --- | --- | --- |
+| New issue body/title, or any issue comment | `@claude` | Full pipeline: **plan (Opus)** → **implement (Sonnet)** if the plan has no open questions |
+| New issue body/title, or any issue comment | `@claude plan` | **Planning only (Opus)** — posts the plan as a comment, never implements |
+| Any issue comment | `@claude implement` | **Implementation only (Sonnet)** — skips planning, implements the latest `<!-- claude:plan -->` comment and opens a PR |
+| PR comment / PR review | `@claude` | Conversational reply — **Opus** for a submitted review, **Sonnet** for follow-up comments |
+
+The subcommand is the word immediately after `@claude`; bare `@claude` defaults to
+the full pipeline. `@claude implement` bypasses the no-questions gate — it's an
+explicit instruction to build the most recent plan as-is.
+
+So planning is no longer tied to issue-open: commenting `@claude` (or `@claude
+plan`) on an already-open issue triggers it too. Adding more parameters later is
+a matter of extending the `dispatch` job's parser.
 
 The plan→implement handoff is a job dependency inside one run, not a re-trigger:
 GitHub will not start a new workflow run from a comment the action posts with

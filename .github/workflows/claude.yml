@@ -202,6 +202,11 @@ jobs:
           fetch-depth: 1
       - name: Stage CI helper scripts
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
+      # No custom `prompt` — see the review job. Tag mode posts the plan as a
+      # comment; a custom prompt would silently swallow it. Planning behavior
+      # (the `<!-- claude:plan -->` / `<!-- claude:proceed -->` markers, the
+      # @btoddb-on-questions rule, plan-only vs full) is driven by the
+      # "Planning (Opus)" section of CLAUDE.md, which tag mode reads.
       - name: Plan (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -209,13 +214,6 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-4-8
-          prompt: |
-            Read the codebase and produce a structural implementation plan for
-            this issue, following the "GitHub Workflow" section of CLAUDE.md.
-            Post the plan as a comment on this issue, and include the exact line
-            `<!-- claude:plan -->` in it so the comment can be found later. Do
-            NOT write any code in this run.
-            ${{ needs.dispatch.outputs.plan_only == 'true' && 'This is a plan-only request: stop after posting the plan and do NOT include the proceed marker.' || 'If you have zero [QUESTION] items, also include the exact line `<!-- claude:proceed -->` to authorize automatic implementation. If you have any [QUESTION] items, do NOT include the proceed marker; instead @-mention @btoddb in the comment so they are notified to answer.' }}
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:
@@ -290,6 +288,12 @@ jobs:
       - name: Stage CI helper scripts
         if: steps.check_plan.outputs.has_plan == 'true'
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
+      # No custom `prompt` — see the review job. Tag mode lets the action open
+      # the PR and post results; a custom prompt would run in agent mode and
+      # swallow the output. Implementation behavior (build the most recent
+      # `<!-- claude:plan -->` comment, feature branch only, open a PR) is driven
+      # by the "Implementation (Sonnet)" section of CLAUDE.md, which tag mode
+      # reads.
       - name: Implement (Sonnet)
         id: claude
         if: steps.check_plan.outputs.has_plan == 'true'
@@ -298,13 +302,6 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-sonnet-4-6
-          prompt: |
-            Implement the approved plan on this issue, following CLAUDE.md
-            exactly. The plan is in the most recent issue comment containing the
-            line `<!-- claude:plan -->`; use that comment as the source of truth.
-            NEVER commit to main: create a feature branch, implement the change,
-            run the project's lint and tests, and open a Pull Request that
-            references this issue.
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:

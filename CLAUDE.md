@@ -62,11 +62,12 @@ implementation. This is automatic; you don't need to report your own model.
 - **The latest plan comment is also the gate for auto-implementation:**
   - If you have **zero `[QUESTION]` items**, also include the exact line `<!-- claude:proceed -->`. The `implement` job finds the latest plan comment, sees this marker, and Sonnet implements the plan and opens the PR automatically — no human step required.
   - If you have **any `[QUESTION]` items**, do **not** include the proceed marker. Instead `@btoddb` in the comment so they are notified to answer. Implementation stays parked until a newer plan comment is posted with the proceed marker.
+  - For an **`@claude plan`** (plan-only) request, post the plan with the `<!-- claude:plan -->` marker but **omit `<!-- claude:proceed -->`** — planning only, never auto-implement.
 
 ### Implementation (Sonnet)
-- Sonnet should execute the approved plan strictly.
+- Sonnet should execute the approved plan strictly. The plan is the **most recent comment containing `<!-- claude:plan -->`** — use it as the source of truth.
 - **constraint** **NEVER** work on main.  Create a new branch for the changes
-- Implement the code and cut a Pull Request (PR) referencing the original issue
+- Implement the code and cut a Pull Request (PR) referencing the original issue. Opening the PR is the deliverable — don't finish without it.
 
 #### What Not to Commit
 - Build artifacts, generated bundles, and compiled outputs (unless the project explicitly tracks them).

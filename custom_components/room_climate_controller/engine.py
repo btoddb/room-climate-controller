@@ -84,6 +84,27 @@ def clamp_setpoint(value: int, min_temp: float | None, max_temp: float | None) -
     return value
 
 
+def _setpoint_needs_send(
+    current_setpoint: float | None,
+    desired_setpoint: int,
+    *,
+    entering: bool,
+) -> bool:
+    """
+    Whether a ``SetTemperature`` is needed for the current evaluation (CC-19).
+
+    A device that doesn't report its setpoint (``current_setpoint is None``) is
+    only commanded when the mode is being (re)entered this evaluation — that
+    transition is already sending a mode/power command, so attaching the
+    setpoint is correct. Once running, a non-reporting device must not be
+    re-commanded on every sensor tick (humidity included) just because its
+    setpoint can't be confirmed.
+    """
+    if current_setpoint is None:
+        return entering
+    return current_setpoint != desired_setpoint
+
+
 # ---------------------------------------------------------------------------
 # Inputs
 # ---------------------------------------------------------------------------
@@ -419,7 +440,9 @@ def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
     if (
         decision != OFF
         and ac.supports_set_temp
-        and (ac.current_setpoint is None or ac.current_setpoint != desired_setpoint)
+        and _setpoint_needs_send(
+            ac.current_setpoint, desired_setpoint, entering=decision != current
+        )
     ):
         out.add(SetTemperature(ac.entity_id, target, decision))
     if inp.ac_power and decision == OFF and inp.ac_power.is_on:
@@ -482,7 +505,9 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
     if (
         decision in (COOL, FAN_ONLY)
         and ac.supports_set_temp
-        and (ac.current_setpoint is None or ac.current_setpoint != desired_setpoint)
+        and _setpoint_needs_send(
+            ac.current_setpoint, desired_setpoint, entering=decision != current
+        )
     ):
         out.add(SetTemperature(ac.entity_id, inp.ac_setpoint_int, decision))
     if inp.ac_power and decision == OFF and inp.ac_power.is_on:
@@ -547,9 +572,8 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
     if (
         decision in (HEAT, FAN_ONLY)
         and heater.supports_set_temp
-        and (
-            heater.current_setpoint is None
-            or heater.current_setpoint != desired_setpoint
+        and _setpoint_needs_send(
+            heater.current_setpoint, desired_setpoint, entering=decision != current
         )
     ):
         out.add(SetTemperature(heater.entity_id, inp.target_heating_int, decision))

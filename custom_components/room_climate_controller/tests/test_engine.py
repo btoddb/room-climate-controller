@@ -605,8 +605,35 @@ def test_combined_setpoint_idempotent_at_clamped_value():
     assert not any(isinstance(c, SetTemperature) for c in cmds)
 
 
-def test_set_temperature_sent_when_setpoint_unknown():
-    """SetTemperature is sent when current_setpoint is None (device state unknown)."""
+def test_set_temperature_sent_when_setpoint_unknown_and_entering():
+    """
+    SetTemperature is sent for an unknown setpoint when the mode is (re)entered.
+
+    A mode transition (here off -> cool) already issues a SetHvacMode, so
+    attaching the floor setpoint while the device hasn't reported one yet is
+    correct and not a steady-state re-command.
+    """
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high"), current_setpoint=None),
+            use_ac=True,
+            room_temp=80.0,
+        )
+    )
+    assert any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_set_temperature_not_resent_when_setpoint_unknown_and_steady():
+    """
+    CC-19/CC-L1/CC-L2 (issue #31).
+
+    A device that never reports its setpoint must not be re-commanded on
+    every evaluation once it's already running. Before the fix,
+    ``current_setpoint is None`` unconditionally re-emitted
+    SetTemperature on every tick — including humidity-only ticks, which the
+    engine never reads — spamming the device and violating CC-L2's "humidity
+    should never list commands" rule.
+    """
     cmds = compute_commands(
         _base(
             ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=None),
@@ -614,7 +641,41 @@ def test_set_temperature_sent_when_setpoint_unknown():
             room_temp=80.0,
         )
     )
-    assert any(isinstance(c, SetTemperature) for c in cmds)
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_split_heater_setpoint_not_resent_when_unknown_and_steady():
+    """Same steady-state idempotency fix as the split A/C case, for the heater."""
+    cmds = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="heat", hvac_modes=("off", "heat"), current_setpoint=None
+            ),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_combined_setpoint_not_resent_when_unknown_and_steady():
+    """Same steady-state idempotency fix as the split A/C case, for combined mode."""
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="heat",
+                hvac_modes=("off", "cool", "heat"),
+                current_setpoint=None,
+            ),
+            use_ac=True,
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
 
 
 def test_split_ac_idle_restarts_at_next_degree():

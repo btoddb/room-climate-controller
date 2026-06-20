@@ -306,6 +306,94 @@ def test_companion_fan_percentage():
     assert any(isinstance(c, FanSetPercentage) and c.percentage == 100 for c in cmds)
 
 
+def test_standalone_fan_stepped_speed_grid_no_churn():
+    """
+    CC-6: a stepped fan already on the grid step for ``low`` isn't re-commanded.
+
+    Reproduces fan.air_circulator (issue #19): percentage_step=11.111 (9
+    speeds) snaps a commanded 10% up to speed 1 (11%), which the device then
+    reports. The raw-percentage de-dup never matches 11 != 10 and re-sends
+    FanSetPercentage every evaluation; the grid-index compare must.
+    """
+    cmds = compute_commands(
+        _base(
+            fan=FanInfo(
+                "fan.air_circulator",
+                is_on=True,
+                preset_mode=None,
+                percentage=11,
+                preset_modes=(),
+                percentage_step=11.111111111111111,
+            ),
+            use_fan=True,
+            room_temp=74.0,
+        )
+    )
+    assert not any(isinstance(c, FanSetPercentage) for c in cmds)
+
+
+def test_companion_fan_stepped_speed_grid_no_churn():
+    """CC-6: same grid-index fix for a companion fan (fan.ceiling_fan, issue #19)."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(fan_modes=()),
+            ac_fan=FanInfo(
+                "fan.ceiling_fan",
+                is_on=True,
+                preset_mode=None,
+                percentage=16,
+                preset_modes=(),
+                percentage_step=8.333333333333334,
+            ),
+            use_ac=True,
+            room_temp=74.0,
+        )
+    )
+    assert not any(isinstance(c, FanSetPercentage) for c in cmds)
+
+
+def test_standalone_fan_stepped_speed_grid_still_commands_from_off():
+    """CC-6: a stepped fan reporting 0% still gets commanded to the raw tier."""
+    cmds = compute_commands(
+        _base(
+            fan=FanInfo(
+                "fan.air_circulator",
+                is_on=True,
+                preset_mode=None,
+                percentage=0,
+                preset_modes=(),
+                percentage_step=11.111111111111111,
+            ),
+            use_fan=True,
+            room_temp=74.0,
+        )
+    )
+    assert any(
+        isinstance(c, FanSetPercentage) and c.percentage == 10 for c in cmds
+    )
+
+
+def test_standalone_fan_stepped_speed_grid_tier_change_still_commands():
+    """CC-6: a stepped fan on the ``low`` grid step still commands a tier change."""
+    cmds = compute_commands(
+        _base(
+            fan=FanInfo(
+                "fan.air_circulator",
+                is_on=True,
+                preset_mode=None,
+                percentage=11,
+                preset_modes=(),
+                percentage_step=11.111111111111111,
+            ),
+            use_fan=True,
+            room_temp=79.0,
+        )
+    )
+    assert any(
+        isinstance(c, FanSetPercentage) and c.percentage == 100 for c in cmds
+    )
+
+
 def test_no_redundant_fan_mode():
     cmds = compute_commands(
         _base(

@@ -162,11 +162,23 @@ jobs:
           fetch-depth: 1
       - name: Stage CI helper scripts
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+          cache: "pip"
+      - name: Install requirements
+        run: python3 -m pip install -r requirements.txt
       # No custom `prompt`: that puts the action in agent mode, which does not
       # create the tracking comment, so Claude's review is never posted. Running
       # in tag mode (responding to the "@claude review" comment) posts the result
       # as a comment. Review behavior is driven by the "Review (Opus)" section of
       # CLAUDE.md, which tag mode reads.
+      #
+      # --allowedTools is a full replacement list (see the implement job's
+      # comment), so the file tools are listed alongside the Bash grant even
+      # though review never edits code — CLAUDE.md's "never make changes"
+      # constraint is enforced by leaving Edit/Write off this list.
       - name: Review (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -174,6 +186,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-4-8
+            --allowedTools "Read,Glob,Grep,Bash(pytest *),Bash(scripts/lint),Bash(scripts/lint *)"
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:

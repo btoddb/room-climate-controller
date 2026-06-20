@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
 
-from .const import SUBENTRY_TYPE_ROOM
-from .models import Profile, Room, format_profile_id
+from .const import LOGGER_SETTINGS, SUBENTRY_TYPE_ROOM
+from .models import Profile, Room, describe_room_settings, format_profile_id
 from .store import ProfileStore
 
-_LOGGER = logging.getLogger(__name__)
+_SETTINGS_LOGGER = logging.getLogger(LOGGER_SETTINGS)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -60,13 +60,21 @@ class RoomClimateHub:
             room = Room.from_subentry(subentry_id, subentry.data)
             rooms[room.key] = room
             if room.key not in old:
-                _LOGGER.info("[room=%s] Room created: '%s'", room.key, room.label)
+                _SETTINGS_LOGGER.info(
+                    "[room=%s] Room created: '%s': %s",
+                    room.key,
+                    room.label,
+                    describe_room_settings(room),
+                )
             elif old[room.key] != room:
-                _LOGGER.info(
-                    "[room=%s] Room settings changed: '%s'", room.key, room.label
+                _SETTINGS_LOGGER.info(
+                    "[room=%s] Room settings changed: '%s': %s",
+                    room.key,
+                    room.label,
+                    describe_room_settings(room),
                 )
         for key in set(old) - set(rooms):
-            _LOGGER.info("[room=%s] Room removed: '%s'", key, old[key].label)
+            _SETTINGS_LOGGER.info("[room=%s] Room removed: '%s'", key, old[key].label)
         self.rooms = rooms
 
     async def async_save(self) -> None:

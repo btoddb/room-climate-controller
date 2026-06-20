@@ -18,6 +18,7 @@ from .const import (
     KEY_MANUAL_MODE,
     KEY_TARGET,
     KEY_USE,
+    LOGGER_PROFILE,
 )
 from .entity import resolve_room_entity
 
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
     from .hub import RoomClimateConfigEntry
     from .models import Profile
 
-_LOGGER = logging.getLogger(__name__)
+_PROFILE_LOGGER = logging.getLogger(LOGGER_PROFILE)
 
 
 async def async_apply_profile(
@@ -47,10 +48,10 @@ async def async_apply_profile(
             hass, entry.entry_id, room.key, KEY_MANUAL_MODE, "switch"
         )
         if manual and hass.states.is_state(manual, STATE_ON):
-            _LOGGER.info(
+            _PROFILE_LOGGER.info(
                 "[room=%s profile=%s] Profile '%s' skipped: manual mode active",
                 room.key,
-                profile.id,
+                profile.name,
                 profile.name,
             )
             return
@@ -60,10 +61,10 @@ async def async_apply_profile(
         for device in room.devices
         if (p := profile.presets.get(device)) is not None
     )
-    _LOGGER.info(
+    _PROFILE_LOGGER.info(
         "[room=%s profile=%s] Profile '%s' applied (%s): %s",
         room.key,
-        profile.id,
+        profile.name,
         profile.name,
         "explicit" if force else "scheduled",
         settings or "no presets",

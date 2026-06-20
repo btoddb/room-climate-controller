@@ -8,6 +8,15 @@ from homeassistant.const import Platform
 
 DOMAIN: Final = "room_climate_controller"
 
+# --- Child loggers -----------------------------------------------------------
+# Per-category loggers under the integration's base namespace so HA's logger
+# config can set a level per category (and the category shows in the
+# logger-name column), independent of the module that happens to emit it.
+LOGGER_SENSOR: Final = f"custom_components.{DOMAIN}.sensor"
+LOGGER_SETTINGS: Final = f"custom_components.{DOMAIN}.settings"
+LOGGER_PROFILE: Final = f"custom_components.{DOMAIN}.profile"
+LOGGER_CAPABILITIES: Final = f"custom_components.{DOMAIN}.capabilities"
+
 PLATFORMS: Final = [
     Platform.SENSOR,
     Platform.NUMBER,

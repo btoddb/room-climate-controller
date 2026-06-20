@@ -18,6 +18,8 @@ from .const import (
     KEY_MEDIUM_OFFSET,
     KEY_PROFILE_PRESET,
     KEY_TARGET,
+    LOGGER_PROFILE,
+    LOGGER_SETTINGS,
     OFFSET_MAX,
     OFFSET_MIN,
     SIGNAL_ADD_PROFILE_ENTITIES,
@@ -32,6 +34,8 @@ if TYPE_CHECKING:
     from .hub import RoomClimateConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
+_SETTINGS_LOGGER = logging.getLogger(LOGGER_SETTINGS)
+_PROFILE_LOGGER = logging.getLogger(LOGGER_PROFILE)
 
 
 @dataclass(frozen=True)
@@ -164,7 +168,7 @@ class RoomNumber(RestoreNumber):
         self._attr_native_value = value
         self.async_write_ha_state()
         if old != value:
-            _LOGGER.info(
+            _SETTINGS_LOGGER.info(
                 "[room=%s] %s → %s°F", self._room_key, self._attr_name, int(value)
             )
 
@@ -221,10 +225,10 @@ class ProfilePresetNumber(ProfileRemovalMixin, RestoreNumber):
         if old != value:
             profile = self._entry.runtime_data.get_profile(self._profile_id)
             if profile is not None:
-                _LOGGER.info(
+                _PROFILE_LOGGER.info(
                     "[room=%s profile=%s] Profile preset edited: %s target → %s°F",
                     profile.room,
-                    self._profile_id,
+                    profile.name,
                     self._device,
                     int(value),
                 )

@@ -216,6 +216,50 @@ class Room:
         return tuple(d for d in DEVICE_TYPES if self.supports(d))
 
 
+def describe_room_settings(room: Room) -> str:
+    """
+    Render a room's full configuration as one log-friendly string (CC-L5).
+
+    Pure/HA-free so it can be unit-tested directly; used by ``hub.py`` to append
+    the room's settings to "Room created" / "Room settings changed" log lines.
+    """
+    parts = [
+        f"devices={list(room.devices)}",
+        f"combined={room.combined}",
+    ]
+    if room.has_ac:
+        parts.append(f"ac_climate={room.ac_climate}")
+        if room.ac_fan_entity:
+            parts.append(f"ac_fan_entity={room.ac_fan_entity}")
+        if room.ac_power_switch:
+            parts.append(f"ac_power_switch={room.ac_power_switch}")
+        parts.append(f"ac_fan_only={room.ac_fan_only}")
+    if room.has_heater:
+        parts.append(f"heater_climate={room.heater_climate}")
+        if room.heater_fan_entity:
+            parts.append(f"heater_fan_entity={room.heater_fan_entity}")
+        if room.heater_power_switch:
+            parts.append(f"heater_power_switch={room.heater_power_switch}")
+        parts.append(f"heater_fan_only={room.heater_fan_only}")
+    if room.has_fan:
+        parts.append(f"fan_entity={room.fan_entity}")
+    parts.append(f"temperature_sensor={room.temperature_sensor}")
+    if room.humidity_sensor:
+        parts.append(f"humidity_sensor={room.humidity_sensor}")
+    if room.power_sensor:
+        parts.append(f"power_sensor={room.power_sensor}")
+    if room.window_sensors:
+        parts.append(f"window_sensors={list(room.window_sensors)}")
+    for device in room.devices:
+        limits = room.limits[device]
+        parts.append(f"{device}_limits=[{limits['min']:.0f},{limits['max']:.0f}]°F")
+    parts.append(f"command_delay={room.command_delay}s")
+    parts.append(f"power_on_delay={room.power_on_delay}s")
+    if room.area_id:
+        parts.append(f"area_id={room.area_id}")
+    return ", ".join(parts)
+
+
 # ---------------------------------------------------------------------------
 # Profile model (stored in .storage, source of truth for preset values)
 # ---------------------------------------------------------------------------

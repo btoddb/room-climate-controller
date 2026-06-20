@@ -290,6 +290,77 @@ def test_standalone_fan_medium():
     assert isinstance(cmds[2], FanSetPreset) and cmds[2].preset_mode == "medium"
 
 
+# --- whole-degree threshold-crossing accuracy (CC-5 / CC-L1) ----------------
+def test_sub_degree_change_crosses_no_threshold_emits_nothing():
+    """
+    A sub-degree change that crosses no whole-degree tier emits nothing.
+
+    Neither the CC-5 tiers nor the CC-27 hysteresis boundary are crossed, and
+    the fan is already on at the right speed and direction, so no command is due.
+    """
+    cmds = compute_commands(
+        _base(
+            fan=FanInfo(
+                "fan.tower",
+                is_on=True,
+                preset_mode="medium",
+                percentage=50,
+                preset_modes=("low", "medium", "high"),
+            ),
+            use_fan=True,
+            target_fan=72.0,
+            fan_medium=75.0,
+            fan_high=78.0,
+            room_temp=76.9,  # int(76.9) == 76: still medium tier, still > 72+0.2
+        )
+    )
+    assert cmds == []
+
+
+def test_whole_degree_change_crosses_medium_threshold():
+    """Crossing from low into medium (CC-5) re-commands the fan's speed."""
+    cmds = compute_commands(
+        _base(
+            fan=FanInfo(
+                "fan.tower",
+                is_on=True,
+                preset_mode="low",
+                percentage=10,
+                preset_modes=("low", "medium", "high"),
+            ),
+            use_fan=True,
+            target_fan=72.0,
+            fan_medium=75.0,
+            fan_high=78.0,
+            room_temp=75.0,  # int(75) == 75: crosses into medium (>= 75)
+        )
+    )
+    assert _types(cmds) == ["FanSetPreset"]
+    assert isinstance(cmds[0], FanSetPreset) and cmds[0].preset_mode == "medium"
+
+
+def test_whole_degree_change_crosses_high_threshold():
+    """Crossing from medium into high (CC-5) re-commands the fan's speed."""
+    cmds = compute_commands(
+        _base(
+            fan=FanInfo(
+                "fan.tower",
+                is_on=True,
+                preset_mode="medium",
+                percentage=50,
+                preset_modes=("low", "medium", "high"),
+            ),
+            use_fan=True,
+            target_fan=72.0,
+            fan_medium=75.0,
+            fan_high=78.0,
+            room_temp=78.0,  # int(78) == 78: crosses into high (>= 78)
+        )
+    )
+    assert _types(cmds) == ["FanSetPreset"]
+    assert isinstance(cmds[0], FanSetPreset) and cmds[0].preset_mode == "high"
+
+
 def test_companion_fan_percentage():
     cmds = compute_commands(
         _base(

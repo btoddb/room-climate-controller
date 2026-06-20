@@ -40,6 +40,7 @@ max-complexity = 25
     "PLR2004", # magic values in comparisons
     "PT018",   # assertion should be broken into parts
     "S101",    # assert is the normal test pattern
+    "SLF001",  # tests legitimately exercise private members (e.g. controller._on_change)
 ]
 "custom_components/room_climate_controller/engine.py" = [
     "S101",    # assert used for type-narrowing invariants

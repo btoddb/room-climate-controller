@@ -26,6 +26,10 @@ if [ -n "${EXECUTION_FILE:-}" ] && [ -f "$EXECUTION_FILE" ]; then
       | map(select(. != null and . != ""))
       | join(" ")
     ' "$EXECUTION_FILE" 2>/dev/null || true)"
+  # Collapse to one line and cap the length — the log schema is undocumented,
+  # so a stray backtick or newline in error/subtype shouldn't break the
+  # inline-code formatting of the posted comment.
+  error_text="$(printf '%s' "$error_text" | tr '\n' ' ' | tr -d '`' | cut -c1-300)"
 fi
 
 # Heuristic classification: match known usage/token/rate-limit signatures.

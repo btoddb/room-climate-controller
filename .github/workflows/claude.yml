@@ -300,12 +300,15 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Bash is disabled by default in this action — without --allowedTools
-          # Sonnet can edit files and open the PR but cannot run the test/lint
-          # commands CLAUDE.md asks for, and has to caveat the PR instead.
+          # --allowedTools is a full replacement list, not an addition to the
+          # action's defaults: omitting Read/Edit/Write/Glob/Grep here aborts
+          # the run the instant Claude tries one (confirmed — an earlier
+          # version of this line only listed the Bash entries and every run
+          # died at the first `Read`, 0/7 todos checked off). List the normal
+          # file tools explicitly alongside the Bash grant.
           claude_args: |
             --model claude-sonnet-4-6
-            --allowedTools "Bash(pytest *),Bash(scripts/lint),Bash(scripts/lint *)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(pytest *),Bash(scripts/lint),Bash(scripts/lint *)"
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:

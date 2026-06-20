@@ -54,6 +54,13 @@ model id the API reported for that run (read from the action's execution log,
 not the requested `--model`) — on the issue for planning, on the PR for
 implementation. This is automatic; you don't need to report your own model.
 
+If a phase fails outright — usage/token limit reached, an API error, a
+timeout — `.github/scripts/report-failure.sh` posts an @btoddb-tagged comment
+naming the phase and, heuristically, the likely cause (usage/token limit vs.
+a generic failure), instead of the run just going red with no comment. Every
+phase job (`respond`, `review`, `implement`, and the `plan` job's no-plan
+gate) wires this in. This is automatic; you don't need to invoke it yourself.
+
 ### Planning (Opus)
 - For every new issue, Opus must read the codebase and generate a structural implementation plan before making any code changes.
 - Ensure the plan is clear and outlines the required steps.

@@ -99,6 +99,7 @@ class ClimateInfo:
     min_temp: float | None
     supports_set_temp: bool
     current_setpoint: float | None = None
+    max_temp: float | None = None
 
     @property
     def has_fan(self) -> bool:
@@ -414,10 +415,11 @@ def _combined(inp: EngineInputs, out: _Out) -> None:  # noqa: PLR0912
             Delay(inp.command_delay_ms),
             TurnOffClimate(ac.entity_id),
         )
+    desired_setpoint = clamp_setpoint(target, ac.min_temp, ac.max_temp)
     if (
         decision != OFF
         and ac.supports_set_temp
-        and (ac.current_setpoint is None or ac.current_setpoint != target)
+        and (ac.current_setpoint is None or ac.current_setpoint != desired_setpoint)
     ):
         out.add(SetTemperature(ac.entity_id, target, decision))
     if inp.ac_power and decision == OFF and inp.ac_power.is_on:
@@ -476,10 +478,11 @@ def _split_ac(inp: EngineInputs, out: _Out) -> None:
             Delay(inp.command_delay_ms),
             TurnOffClimate(ac.entity_id),
         )
+    desired_setpoint = clamp_setpoint(inp.ac_setpoint_int, ac.min_temp, ac.max_temp)
     if (
         decision in (COOL, FAN_ONLY)
         and ac.supports_set_temp
-        and (ac.current_setpoint is None or ac.current_setpoint != inp.ac_setpoint_int)
+        and (ac.current_setpoint is None or ac.current_setpoint != desired_setpoint)
     ):
         out.add(SetTemperature(ac.entity_id, inp.ac_setpoint_int, decision))
     if inp.ac_power and decision == OFF and inp.ac_power.is_on:
@@ -538,12 +541,15 @@ def _split_heater(inp: EngineInputs, out: _Out) -> None:
             Delay(inp.command_delay_ms),
             TurnOffClimate(heater.entity_id),
         )
+    desired_setpoint = clamp_setpoint(
+        inp.target_heating_int, heater.min_temp, heater.max_temp
+    )
     if (
         decision in (HEAT, FAN_ONLY)
         and heater.supports_set_temp
         and (
             heater.current_setpoint is None
-            or heater.current_setpoint != inp.target_heating_int
+            or heater.current_setpoint != desired_setpoint
         )
     ):
         out.add(SetTemperature(heater.entity_id, inp.target_heating_int, decision))

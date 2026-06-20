@@ -45,7 +45,12 @@ from .engine import (
     clamp_setpoint,
     compute_commands,
 )
-from .entity import fan_direction_via_preset, fan_supports_direction
+from .entity import (
+    describe_climate_capabilities,
+    describe_fan_capabilities,
+    fan_direction_via_preset,
+    fan_supports_direction,
+)
 from .models import Room, room_uid
 
 if TYPE_CHECKING:
@@ -134,6 +139,69 @@ def _service_for(cmd: Command) -> tuple[str, str, dict]:  # noqa: PLR0911
     raise ValueError(msg)
 
 
+def _device_label(room: Room, entity_id: str) -> str:
+    """Map a command's entity_id back to the room's device role, for CC-L7."""
+    labels = {
+        room.ac_climate: "A/C",
+        room.heater_climate: "Heater",
+        room.fan_entity: "Fan",
+        room.ac_fan_entity: "A/C fan",
+        room.heater_fan_entity: "Heater fan",
+        room.ac_power_switch: "A/C power",
+        room.heater_power_switch: "Heater power",
+    }
+    return labels.get(entity_id) or entity_id
+
+
+def _describe_command(cmd: Command, room: Room) -> str:  # noqa: PLR0911
+    """Render a resolved command as a short "<device> <action>" phrase (CC-L7)."""
+    label = _device_label(room, cmd.entity_id)
+    if isinstance(cmd, SetHvacMode):
+        return f"{label} → {cmd.hvac_mode}"
+    if isinstance(cmd, TurnOffClimate):
+        return f"{label} off"
+    if isinstance(cmd, SetTemperature):
+        return f"{label} setpoint → {cmd.temperature}°F"
+    if isinstance(cmd, SetFanMode):
+        return f"{label} fan speed → {cmd.fan_mode}"
+    if isinstance(cmd, FanTurnOn):
+        return f"{label} on"
+    if isinstance(cmd, FanTurnOff):
+        return f"{label} off"
+    if isinstance(cmd, FanSetPreset):
+        return f"{label} speed → {cmd.preset_mode}"
+    if isinstance(cmd, FanSetPercentage):
+        return f"{label} speed → {cmd.percentage}%"
+    if isinstance(cmd, FanSetDirection):
+        return f"{label} direction → {cmd.direction}"
+    if isinstance(cmd, SwitchTurnOn):
+        return f"{label} on"
+    if isinstance(cmd, SwitchTurnOff):
+        return f"{label} off"
+    return repr(cmd)
+
+
+def _threshold_context(room: Room, inputs: EngineInputs) -> str:
+    """Compact room-temp + per-device threshold summary (CC-L7/CC-L11)."""
+    parts = [f"temp {int(inputs.room_temp)}°F"]
+    if room.has_ac:
+        parts.append(
+            f"cooling target {int(inputs.target_cooling)}°F "
+            f"(med {int(inputs.cooling_medium)}°F high {int(inputs.cooling_high)}°F)"
+        )
+    if room.has_heater:
+        parts.append(
+            f"heating target {int(inputs.target_heating)}°F "
+            f"(med {int(inputs.heating_medium)}°F high {int(inputs.heating_high)}°F)"
+        )
+    if room.has_fan:
+        parts.append(
+            f"fan target {int(inputs.target_fan)}°F "
+            f"(med {int(inputs.fan_medium)}°F high {int(inputs.fan_high)}°F)"
+        )
+    return "; ".join(parts)
+
+
 class RoomController:
     """Reacts to a room's live entities and commands the physical devices."""
 
@@ -154,6 +222,7 @@ class RoomController:
         """Subscribe and run an initial evaluation."""
         self._resubscribe()
         self.async_request_run()
+        self._log_capabilities()
         # Pick up our own entities that register a moment after setup.
         self.entry.async_on_unload(
             async_call_later(self.hass, 3, self._delayed_resubscribe)
@@ -173,6 +242,47 @@ class RoomController:
     def _delayed_resubscribe(self, _now: object) -> None:
         self._resubscribe()
         self.async_request_run()
+        self._log_capabilities()
+
+    def _log_capabilities(self) -> None:
+        """
+        Dump each configured climate/fan entity's capabilities at DEBUG (CC-L10).
+
+        Called at startup and again after the delayed resubscribe, since an
+        entity registered by another integration may not have a state yet when
+        the controller first starts.
+        """
+        room = self.room
+        if room.has_ac:
+            _LOGGER.debug(
+                "[room=%s] A/C capabilities: %s",
+                room.key,
+                describe_climate_capabilities(self.hass, room.ac_climate),
+            )
+            if room.ac_fan_entity:
+                _LOGGER.debug(
+                    "[room=%s] A/C fan capabilities: %s",
+                    room.key,
+                    describe_fan_capabilities(self.hass, room.ac_fan_entity),
+                )
+        if room.has_heater and not room.combined:
+            _LOGGER.debug(
+                "[room=%s] Heater capabilities: %s",
+                room.key,
+                describe_climate_capabilities(self.hass, room.heater_climate),
+            )
+            if room.heater_fan_entity:
+                _LOGGER.debug(
+                    "[room=%s] Heater fan capabilities: %s",
+                    room.key,
+                    describe_fan_capabilities(self.hass, room.heater_fan_entity),
+                )
+        if room.has_fan and room.fan_entity:
+            _LOGGER.debug(
+                "[room=%s] Fan capabilities: %s",
+                room.key,
+                describe_fan_capabilities(self.hass, room.fan_entity),
+            )
 
     # -- subscriptions -------------------------------------------------------
     @callback
@@ -315,7 +425,18 @@ class RoomController:
             inputs = self._build_inputs()
             if inputs is None:
                 return
-            for cmd in compute_commands(inputs):
+            _LOGGER.debug(
+                "[room=%s] %s; use ac=%s heater=%s fan=%s window_open=%s",
+                self.room.key,
+                _threshold_context(self.room, inputs),
+                inputs.use_ac,
+                inputs.use_heater,
+                inputs.use_fan,
+                "yes" if inputs.window_open else "no",
+            )
+            commands = compute_commands(inputs)
+            action_descriptions: list[str] = []
+            for cmd in commands:
                 if isinstance(cmd, Delay):
                     await asyncio.sleep(cmd.ms / 1000)
                     continue
@@ -324,21 +445,11 @@ class RoomController:
                 # mode-dependent range (off vs cool), and any preceding
                 # SetHvacMode has already switched it, so this reflects the
                 # range the device will actually validate against (CC-9).
+                # Resolved once here and reused for both the service call and
+                # the CC-L7 description, so the log always matches what was
+                # actually sent.
                 resolved_cmd = self._resolve_command(cmd)
-                if isinstance(
-                    resolved_cmd, SetTemperature
-                ) and not self._device_reports_setpoint(resolved_cmd.entity_id):
-                    # CC-19/CC-23: a non-reporting device can never be confirmed
-                    # to have converged, so the engine (re)sends every
-                    # evaluation. Logged so this expected spam is distinguishable
-                    # from a device repeatedly rejecting/reverting a setpoint.
-                    _LOGGER.info(
-                        "Room %s: %s doesn't report its setpoint — "
-                        "sending SetTemperature(%s°F) unconditionally",
-                        self.room.key,
-                        resolved_cmd.entity_id,
-                        resolved_cmd.temperature,
-                    )
+                action_descriptions.append(_describe_command(resolved_cmd, self.room))
                 domain, service, data = _service_for(resolved_cmd)
                 # Isolate each call: one device rejecting a command (e.g. a
                 # transient out-of-range setpoint) must not abandon the
@@ -357,6 +468,13 @@ class RoomController:
                         service,
                         data,
                     )
+            if action_descriptions:
+                _LOGGER.info(
+                    "[room=%s] RCC commanded: %s (%s)",
+                    self.room.key,
+                    ", ".join(action_descriptions),
+                    _threshold_context(self.room, inputs),
+                )
         except asyncio.CancelledError:
             raise
         except Exception:

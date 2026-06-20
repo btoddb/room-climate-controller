@@ -53,6 +53,7 @@ from .const import (
     DOMAIN,
     SUBENTRY_TYPE_ROOM,
 )
+from .entity import describe_climate_capabilities, describe_fan_capabilities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -223,6 +224,7 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
                 self._data.get(CONF_HEATER_CLIMATE),
                 self._data.get(CONF_FAN_ENTITY),
             )
+            self._log_device_capabilities()
             return await self.async_step_sensors()
 
         combined = self._data.get(CONF_COMBINED)
@@ -233,6 +235,39 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
             ),
             description_placeholders={"combined": "yes" if combined else "no"},
         )
+
+    def _log_device_capabilities(self) -> None:
+        """
+        Dump the selected climate/fan entities' capabilities at DEBUG (CC-L10).
+
+        Answers "does this A/C have a fan_only mode?" / "what fan modes does it
+        support?" directly from room setup, sharing the same formatting helpers
+        the controller uses once the room is running.
+        """
+        room_key = self._data.get(CONF_ROOM_KEY)
+        for label, key in (
+            ("A/C", CONF_AC_CLIMATE),
+            ("Heater", CONF_HEATER_CLIMATE),
+        ):
+            if entity_id := self._data.get(key):
+                _LOGGER.debug(
+                    "[room=%s] %s capabilities: %s",
+                    room_key,
+                    label,
+                    describe_climate_capabilities(self.hass, entity_id),
+                )
+        for label, key in (
+            ("Fan", CONF_FAN_ENTITY),
+            ("A/C fan", CONF_AC_FAN_ENTITY),
+            ("Heater fan", CONF_HEATER_FAN_ENTITY),
+        ):
+            if entity_id := self._data.get(key):
+                _LOGGER.debug(
+                    "[room=%s] %s capabilities: %s",
+                    room_key,
+                    label,
+                    describe_fan_capabilities(self.hass, entity_id),
+                )
 
     # -- step 3: sensors, limits, timing ------------------------------------
     async def async_step_sensors(

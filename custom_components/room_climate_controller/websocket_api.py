@@ -458,10 +458,18 @@ async def ws_set_room(
         )
         return
 
+    old_room = profile.room
     # The profile's preset entities depend on the room's device set, so rebuild
     # cleanly via reload rather than surgically swapping entities.
     hub.profiles = [p.reassigned_to(room) if p.id == pid else p for p in hub.profiles]
     await hub.async_save()
+    _LOGGER.info(
+        "[room=%s profile=%s] Profile moved: %s → %s",
+        room.key,
+        pid,
+        old_room,
+        room.key,
+    )
     await hass.config_entries.async_reload(entry.entry_id)
     connection.send_result(msg["id"], {"success": True})
 

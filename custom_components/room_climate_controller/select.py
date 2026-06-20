@@ -8,6 +8,7 @@ time-range selector without the user creating an ``input_select`` helper.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.components.select import SelectEntity
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from .hub import RoomClimateConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -62,5 +65,8 @@ class GraphTimeRangeSelect(SelectEntity, RestoreEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Update the selected option."""
+        old = self._attr_current_option
         self._attr_current_option = option
         self.async_write_ha_state()
+        if old != option:
+            _LOGGER.info("Graph time range → %s", option)

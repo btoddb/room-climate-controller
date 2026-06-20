@@ -81,3 +81,79 @@ Covers: **Use A/C**, **Use heater**, **Use fan**, **Manual mode**,
 Logged by `controller.py` in `_on_change`. Only fires when the state value actually
 changes (`old_state != new_state`). Unavailable/unknown states are not treated as
 open (CC-21), so no log is emitted for those transitions.
+
+### RCC device actions (CC-L7)
+
+- **CC-L7** When an evaluation produces one or more non-`Delay` device commands:
+  `[room=<key>] RCC commanded: <phrase>, <phrase>, ... (<threshold context>)`
+  One line per evaluation (not one per command), e.g.
+  `[room=office] RCC commanded: A/C → cool, A/C fan speed → high (temp 78°F; cooling target 72°F (med 75°F high 78°F))`.
+  Each command is rendered as a short device + action phrase (`A/C → cool`,
+  `A/C setpoint → 65°F`, `Fan speed → high`, `Fan direction → reverse`,
+  `A/C power on`, etc.) so a customer's log shows *why* a device changed without
+  needing engine internals.
+
+Logged by `controller.py` in `_run`, at **INFO**, after the evaluation's commands
+have all been attempted, using the same per-command resolution that sent them —
+so the logged phrase always matches what was actually sent, even when an earlier
+command in the sequence (e.g. a `SetHvacMode`) changed the device's live range
+for a later one. The threshold context lists the room temperature and the
+target/medium/high thresholds for each device type the room actually has — the
+same data the troubleshooting scenarios in issue #14 need (e.g. "does the fan
+have the right thresholds?").
+
+### Room target/offset edits (CC-L8)
+
+- **CC-L8** When a room's target temperature or medium/high offset number changes:
+  `[room=<key>] <name> → <N>°F`
+  e.g. `[room=office] Cooling target → 72°F`.
+
+Logged by `number.py` in `RoomNumber.async_set_native_value`, at **INFO**, only when
+the value actually changed (mirrors the existing `ProfilePresetNumber` pattern).
+
+### Profile moved (CC-L9)
+
+- **CC-L9** When a profile is moved to a different room via the card:
+  `[room=<key> profile=<id>] Profile moved: <old room> → <new room>`
+
+Logged by `websocket_api.py` in `ws_set_room`, at **INFO**, before the config entry
+reload that rebuilds the profile's entities. `<key>` is the profile's new room.
+
+### Device/fan capability dumps (CC-L10)
+
+- **CC-L10** A one-line capability dump per configured climate/fan entity:
+  `[room=<key>] A/C capabilities: <entity_id>: hvac_modes=[...], fan_only=yes|no, fan_modes=[...], min_temp=<N>, max_temp=<N>`
+  `[room=<key>] Fan capabilities: <entity_id>: preset_modes=[...], reversible=yes|no, percentage_step=<N>`
+
+Emitted at **DEBUG**:
+- by `controller.py` (`RoomController._log_capabilities`) shortly after the
+  controller starts and again after the delayed resubscribe, once entities have
+  registered;
+- by `config_flow.py` (`async_step_devices`) right after a climate/fan entity is
+  selected in room setup — this directly answers "does this A/C have a
+  `fan_only` mode?" from the config flow, before the room is even fully set up.
+
+Both call sites share the formatting helpers `describe_climate_capabilities` /
+`describe_fan_capabilities` in `entity.py` so the two dumps never drift. An
+entity whose state isn't loaded yet logs `<entity_id> (unavailable)` rather than
+raising.
+
+### Resolved thresholds snapshot (CC-L11)
+
+- **CC-L11** Once per evaluation, the resolved room temperature and per-device
+  thresholds plus the use-toggle/window state:
+  `[room=<key>] temp 78°F; cooling target 72°F (med 75°F high 78°F); use ac=on heater=off fan=off window_open=no`
+
+Logged by `controller.py` in `_run`, at **DEBUG**, right after `_build_inputs`
+succeeds. This is the other half of the CC-L7 context, but always emitted (even
+when no command was produced) — it answers "what are the room's thresholds for
+the A/C and Fan?" directly from the log, without changing the temperature again
+to provoke a command.
+
+### Copy/paste room settings (out of scope)
+
+Copy and paste run entirely in the browser (`card/src/profiles/clipboard.ts`,
+`copy-room-settings.ts`) and never call a websocket command, so the integration
+cannot log the button presses themselves. This was confirmed out of scope for
+issue #14. Their effects are still visible in the log once applied: paste writes
+room numbers/switches (CC-L4/CC-L8) or creates a profile (CC-L3c).

@@ -275,6 +275,11 @@ class RoomController:
                 return replace(cmd, temperature=temperature)
         return cmd
 
+    def _device_reports_setpoint(self, entity_id: str) -> bool:
+        """Whether ``entity_id`` currently reports a ``temperature`` attribute."""
+        state = self.hass.states.get(entity_id)
+        return bool(state) and state.attributes.get("temperature") is not None
+
     def _command_suffix(self) -> str:
         """
         Describe the device commands the current state would produce, if any.
@@ -319,7 +324,22 @@ class RoomController:
                 # mode-dependent range (off vs cool), and any preceding
                 # SetHvacMode has already switched it, so this reflects the
                 # range the device will actually validate against (CC-9).
-                domain, service, data = _service_for(self._resolve_command(cmd))
+                resolved_cmd = self._resolve_command(cmd)
+                if isinstance(
+                    resolved_cmd, SetTemperature
+                ) and not self._device_reports_setpoint(resolved_cmd.entity_id):
+                    # CC-19/CC-23: a non-reporting device can never be confirmed
+                    # to have converged, so the engine (re)sends every
+                    # evaluation. Logged so this expected spam is distinguishable
+                    # from a device repeatedly rejecting/reverting a setpoint.
+                    _LOGGER.info(
+                        "Room %s: %s doesn't report its setpoint — "
+                        "sending SetTemperature(%s°F) unconditionally",
+                        self.room.key,
+                        resolved_cmd.entity_id,
+                        resolved_cmd.temperature,
+                    )
+                domain, service, data = _service_for(resolved_cmd)
                 # Isolate each call: one device rejecting a command (e.g. a
                 # transient out-of-range setpoint) must not abandon the
                 # remaining commands for this room.

@@ -43,7 +43,7 @@ reads and the card/profiles write:
 
 ## Idempotent command emission
 
-- **CC-19** The engine emits a device command **only when it changes the device's state**. Every command is gated against the device's currently-reported state and skipped when already satisfied: HVAC-mode / setpoint / fan-mode sets against the climate's reported mode/setpoint/fan_mode, and turn-on/turn-off of climates, fans, and power switches against their current on/off state. Combined with CC-5, a fractional sensor change that leaves the truncated comparison unchanged produces **no commands** — important because many devices (e.g. heat pumps) audibly chirp on every received command.
+- **CC-19** The engine emits a device command **only when it changes the device's state**. Every command is gated against the device's currently-reported state and skipped when already satisfied: HVAC-mode / setpoint / fan-mode sets against the climate's reported mode/setpoint/fan_mode, and turn-on/turn-off of climates, fans, and power switches against their current on/off state. Combined with CC-5, a fractional sensor change that leaves the truncated comparison unchanged produces **no commands** — important because many devices (e.g. heat pumps) audibly chirp on every received command. **Exception:** a climate device that never reports its setpoint (`current_setpoint` always `None`) can't be confirmed to have converged, so `SetTemperature` is sent on **every** evaluation regardless — the same "unknown never matches" convention CC-23 uses for fan direction. The controller logs that the device is non-reporting whenever this fires, so the resend is distinguishable in logs from a device genuinely rejecting/reverting a setpoint.
 
 ## Thresholds & fan-speed tiers
 

@@ -484,6 +484,7 @@ class RoomController:
             preset_mode=attrs.get("preset_mode"),
             percentage=int(attrs.get("percentage") or 0),
             preset_modes=preset_modes,
+            percentage_step=float(attrs.get("percentage_step") or 1.0),
             reversible=fan_supports_direction(self.hass, entity_id),
             direction=direction,
             direction_via_preset=via_preset,

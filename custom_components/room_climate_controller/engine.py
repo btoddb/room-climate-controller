@@ -11,6 +11,7 @@ unit-testable with plain ``python3``.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import ceil
 from typing import TYPE_CHECKING, Final
 
 from .fan_logic import cooling_speed, heating_speed, match_fan_mode
@@ -114,6 +115,10 @@ class FanInfo:
     preset_mode: str | None
     percentage: int
     preset_modes: tuple[str, ...]
+    # Device speed-grid step (CC-6): HA snaps a commanded percentage up (ceil)
+    # to the nearest of ``round(100 / percentage_step)`` discrete speeds, then
+    # reports that snapped value back. 1.0 means continuous (no snapping).
+    percentage_step: float = 1.0
     # Direction support (standalone ceiling fans, CC-22..CC-25). ``reversible``
     # mirrors the entity's DIRECTION capability or "reverse" preset presence;
     # ``direction`` is the reported "forward"/"reverse", or None when unknown.
@@ -588,8 +593,29 @@ def _emit_climate_fan(  # noqa: PLR0913
     else:
         if not companion.is_on:
             out.add(FanTurnOn(companion.entity_id), Delay(inp.command_delay_ms))
-        if companion.percentage != percent:
+        if not _same_fan_speed(
+            companion.percentage, percent, companion.percentage_step
+        ):
             out.add(FanSetPercentage(companion.entity_id, percent))
+
+
+def _same_fan_speed(reported: int, target: int, step: float) -> bool:
+    """
+    Whether ``reported`` already sits on the speed-grid step that commanding
+    ``target`` would select (CC-6).
+
+    HA snaps a ``set_percentage`` call up (``ceil``) onto a fan's discrete
+    speed grid and reports back the snapped value, which a stepped fan can
+    never report as the raw tier percentage (10/50/100). Comparing by grid
+    index instead of raw percentage makes the de-dup idempotent, so the fan
+    isn't re-commanded on every evaluation.
+    """
+    if step <= 1.0 or step >= 100.0:
+        return reported == target
+    count = round(100.0 / step)
+    desired = min(max(ceil(target / 100.0 * count), 1), count)
+    current = min(max(round(reported / 100.0 * count), 0), count)
+    return current == desired
 
 
 # ---------------------------------------------------------------------------
@@ -608,7 +634,7 @@ def _standalone_fan(inp: EngineInputs, out: _Out) -> None:
     if label in fan.preset_modes:
         if (fan.preset_mode or "").lower() != label:
             out.add(FanSetPreset(fan.entity_id, label))
-    elif fan.percentage != percent:
+    elif not _same_fan_speed(fan.percentage, percent, fan.percentage_step):
         out.add(FanSetPercentage(fan.entity_id, percent))
     # Direction (CC-22..CC-24): only reversible fans, only while running, and
     # only when the reported direction differs (unknown never matches).

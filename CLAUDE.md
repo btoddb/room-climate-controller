@@ -71,6 +71,10 @@ implementation. This is automatic; you don't need to report your own model.
 - **constraint** The gate already validated a plan exists in a real (non-sandboxed) check before you ran — do not re-verify markers yourself or comment on whether any marker is present/missing in your PR summary. If you were invoked, a valid plan was already found; just build it.
 - **constraint** **NEVER** work on main.  Create a new branch for the changes
 - Implement the code and cut a Pull Request (PR) referencing the original issue. Opening the PR is the deliverable — don't finish without it.
+- **constraint** Call `gh pr create` non-interactively, with every flag spelled out — never bare `gh pr create` and never `--fill`. Bare invocations prompt interactively and will hang the run. Use:
+  `gh pr create --base main --head <branch> --title "<title>" --body "<body>"`
+  `Bash(gh pr create *)` is granted for exactly this; use it instead of leaving a compare/quick_pull link (the action's default, which does **not** satisfy the line above).
+- **constraint** A re-run of `@claude implement` on a branch that already has a PR will hit `gh pr create`'s duplicate-PR error — that's fine, **not** a failure to fix. `gh pr list`/`gh pr view` aren't in `--allowedTools`, so don't reach for them: `gh pr create`'s own error message already contains the existing PR's URL, so on that specific error just report the existing PR from it instead of retrying.
 
 #### What Not to Commit
 - Build artifacts, generated bundles, and compiled outputs (unless the project explicitly tracks them).

@@ -227,11 +227,17 @@ jobs:
           fetch-depth: 1
       - name: Stage CI helper scripts
         run: cp -r .github/scripts "$RUNNER_TEMP/ci-scripts"
+      # Record a high-water mark *before* the model runs so the gate can locate
+      # the comment this run produces purely by timestamp — no dependence on the
+      # model self-declaring its plan with a literal marker.
+      - name: Snapshot comment timeline
+        id: snapshot
+        run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       # No custom `prompt` — see the review job. Tag mode posts the plan as a
       # comment; a custom prompt would silently swallow it. Planning behavior
-      # (the `<!-- claude:plan -->` / `<!-- claude:proceed -->` markers, the
-      # @btoddb-on-questions rule, plan-only vs full) is driven by the
-      # "Planning (Opus)" section of CLAUDE.md, which tag mode reads.
+      # (write the plan; use `[QUESTION]` + @btoddb when blocked) is driven by
+      # the "Planning (Opus)" section of CLAUDE.md, which tag mode reads. The
+      # machine markers are stamped by the gate step below, NOT by the model.
       - name: Plan (Opus)
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -250,27 +256,71 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number }}" "Planning" "${{ env.CLAUDE_EFFORT }}"
-      - name: Decide whether to auto-implement
+      # Locate the plan, decide proceed-vs-park, and stamp the machine markers
+      # ourselves. The model only writes plan *content* (and `[QUESTION]` items
+      # when blocked) — it never has to remember a literal marker, which was the
+      # single point of failure that silently skipped implementation. Runs even
+      # if the Plan step failed, so a missing plan is reported loudly, not as a
+      # silent green skip.
+      - name: Stamp markers and decide whether to auto-implement
         id: gate
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          STARTED_AT: ${{ steps.snapshot.outputs.started_at }}
+          PLAN_ONLY: ${{ needs.dispatch.outputs.plan_only }}
         run: |
-          # Find the most recent comment tagged as a plan (revisions are posted
-          # as new tagged comments), then proceed only if it carries the marker.
-          body="$(gh issue view "${{ github.event.issue.number }}" \
-            --repo "${{ github.repository }}" \
-            --json comments \
-            --jq '[.comments[] | select(.body | contains("claude:plan"))] | last | .body // ""')"
-          if [ -z "$body" ]; then
-            echo "No plan comment found; not implementing."
+          set -euo pipefail
+
+          # The plan is the newest comment created during this run that was NOT
+          # posted by our own github-actions bot (status/model-log comments).
+          # Located by timestamp + author — deterministic, no marker needed.
+          plan="$(gh issue view "$ISSUE" --repo "$REPO" --json comments \
+            --jq '[.comments[]
+                   | select(.author.login != "github-actions")
+                   | select(.createdAt > "'"$STARTED_AT"'")]
+                  | last | .body // ""')"
+
+          if [ -z "$plan" ]; then
+            # No plan was produced (model error, timeout, or a failed post).
+            # Never skip silently: alert @btoddb and fail the run so it's red.
+            gh issue comment "$ISSUE" --repo "$REPO" --body \
+              "🤖 @btoddb planning ran but produced **no plan comment**, so the pipeline could not hand off to implementation. Please re-run \`@claude plan\`. (This run is failed on purpose so the break is visible rather than a silent skip.)"
             echo "proceed=false" >> "$GITHUB_OUTPUT"
-          elif printf '%s' "$body" | grep -q 'claude:proceed'; then
-            echo "Latest plan has no open questions; implementation will proceed."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Latest plan has open questions (or no marker); waiting for @btoddb."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Planning produced no plan comment; failing so the skip is never silent."
+            exit 1
           fi
+
+          # Open questions => park for a human. The model writes these as
+          # `[QUESTION]` items (required by CLAUDE.md), so that substring is the
+          # machine signal — no separate proceed marker for the model to forget.
+          has_questions=false
+          printf '%s' "$plan" | grep -q '\[QUESTION\]' && has_questions=true
+
+          # @claude plan is planning-only: stamp the plan marker (so a later
+          # @claude implement can find it) but never auto-proceed.
+          proceed=false
+          if [ "$has_questions" = false ] && [ "$PLAN_ONLY" != "true" ]; then
+            proceed=true
+          fi
+
+          if [ "$proceed" = true ]; then
+            body="$(printf '%s\n%s\n\n%s\n' \
+              '<!-- claude:plan -->' '<!-- claude:proceed -->' \
+              '🤖 Plan has no open questions — proceeding to implementation.')"
+          elif [ "$has_questions" = true ]; then
+            body="$(printf '%s\n\n%s\n' '<!-- claude:plan -->' \
+              '🤖 @btoddb the plan above has open `[QUESTION]` items — implementation is parked until they are resolved. Reply with answers, then comment `@claude` to re-plan, or `@claude implement` to build it as-is.')"
+          else
+            body="$(printf '%s\n\n%s\n' '<!-- claude:plan -->' \
+              '🤖 Plan-only run — implementation was not started. Comment `@claude implement` to build this plan.')"
+          fi
+          gh issue comment "$ISSUE" --repo "$REPO" --body "$body"
+
+          echo "proceed=$proceed" >> "$GITHUB_OUTPUT"
+          echo "Plan located (has_questions=$has_questions, plan_only=$PLAN_ONLY, proceed=$proceed)."
 
   # Implementation phase: Sonnet implements the latest plan comment and opens the
   # PR. Fires either as the auto-handoff after `plan` (a full @claude command
@@ -333,10 +383,9 @@ jobs:
         run: python3 -m pip install -r requirements.txt
       # No custom `prompt` — see the review job. Tag mode lets the action open
       # the PR and post results; a custom prompt would run in agent mode and
-      # swallow the output. Implementation behavior (build the most recent
-      # `<!-- claude:plan -->` comment, feature branch only, open a PR) is driven
-      # by the "Implementation (Sonnet)" section of CLAUDE.md, which tag mode
-      # reads.
+      # swallow the output. Implementation behavior (build the most recent plan
+      # Opus wrote in the thread, feature branch only, open a PR) is driven by
+      # the "Implementation (Sonnet)" section of CLAUDE.md, which tag mode reads.
       - name: Implement (Sonnet)
         id: claude
         if: steps.check_plan.outputs.has_plan == 'true'

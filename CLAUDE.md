@@ -58,20 +58,17 @@ implementation. This is automatic; you don't need to report your own model.
 - For every new issue, Opus must read the codebase and generate a structural implementation plan before making any code changes.
 - Ensure the plan is clear and outlines the required steps.
 - **constraint** Opus must post the completed plan **as a comment on the issue** — this is the only thing that carries the plan to the implementation job.
-- **constraint** Every plan comment must contain the **literal text** `<!-- claude:plan -->` **somewhere in the raw comment body, written out exactly as shown — not described, paraphrased, or summarized in prose** (e.g. do *not* write "no proceed marker, so this won't auto-implement" instead of the marker — that sentence is invisible to the automation). A plain-text `grep` over the comment body is what finds your plan; if the literal substring isn't there, the pipeline cannot find it and `@claude implement` will fail with "no plan to build" even though you wrote a perfectly good plan. Put it on its own line, typically at the end of the comment:
-  ```
-  <!-- claude:plan -->
-  ```
-  A plan **revision** is posted as a **new** comment carrying the same literal marker — never silently rewrite history. The pipeline always uses the **most recent** comment containing this exact substring.
-- **The latest plan comment is also the gate for auto-implementation — same rule, the marker must be the literal substring:**
-  - If you have **zero `[QUESTION]` items**, also write the literal line `<!-- claude:proceed -->` (in addition to `<!-- claude:plan -->`, on its own line). The `implement` job greps the latest plan comment for this exact substring, and Sonnet implements the plan and opens the PR automatically — no human step required.
-  - If you have **any `[QUESTION]` items**, do **not** write the proceed marker. Instead `@btoddb` in the comment so they are notified to answer. Implementation stays parked until a newer plan comment is posted with the literal proceed marker.
-  - For an **`@claude plan`** (plan-only) request, write the literal `<!-- claude:plan -->` marker but **omit `<!-- claude:proceed -->`** — planning only, never auto-implement.
-- **constraint** When re-planning (any `@claude plan` after an earlier plan comment exists), read the full issue thread first: find the prior `<!-- claude:plan -->` comment's `[QUESTION]` items and check later comments for answers to them. Resolve answered questions in the revision instead of re-asking — only re-raise a `[QUESTION]` if it's genuinely still unanswered or unresolved.
+- **You do NOT write any `<!-- claude:* -->` markers.** The workflow's gate step stamps `<!-- claude:plan -->` / `<!-- claude:proceed -->` itself, deterministically, after your plan is posted. Hand-writing them does nothing useful and can confuse the gate — just write the plan. (Markers used to be your job and were forgotten, silently skipping implementation; that is why they moved into the pipeline.)
+- **The proceed-vs-park decision is driven entirely by `[QUESTION]` items in your plan body** — this is the one machine signal you control:
+  - **No open questions** → write none, and the gate auto-stamps the proceed marker; Sonnet implements and opens the PR with no human step.
+  - **Any open question** → write it as a `[QUESTION]` item (literal `[QUESTION]` tag) and `@btoddb` so they are notified. The gate sees the tag and parks implementation until a newer plan resolves it. Use `[QUESTION]` *only* for genuine blockers — a stray `[QUESTION]` anywhere in the body will park the run.
+  - For an **`@claude plan`** (plan-only) request, just write the plan; the gate stamps the plan marker but never proceeds, regardless of questions.
+- **constraint** A plan **revision** is posted as a **new** comment — never silently rewrite history. The pipeline always uses the **most recent** plan comment from the run.
+- **constraint** When re-planning (any `@claude plan` after an earlier plan comment exists), read the full issue thread first: find the prior plan's `[QUESTION]` items and check later comments for answers to them. Resolve answered questions in the revision instead of re-asking — only re-raise a `[QUESTION]` if it's genuinely still unanswered or unresolved.
 
 ### Implementation (Sonnet)
-- Sonnet should execute the approved plan strictly. The plan is the **most recent comment containing `<!-- claude:plan -->`** — use it as the source of truth.
-- **constraint** The `implement` job's own gate step already verified that marker exists in a real (non-sandboxed) check before you ran — do not re-verify it yourself or comment on whether the marker is present/missing in your PR summary. If you were invoked, a valid plan was already found; just build it.
+- Sonnet should execute the approved plan strictly. The plan is the **most recent substantive plan comment Opus wrote in the thread** — use it as the source of truth. (The `<!-- claude:plan -->` marker now lives in a short control comment the *workflow* posts; that comment is the pipeline's signal, not where the plan content lives, so read the plan itself from Opus's comment above it.)
+- **constraint** The gate already validated a plan exists in a real (non-sandboxed) check before you ran — do not re-verify markers yourself or comment on whether any marker is present/missing in your PR summary. If you were invoked, a valid plan was already found; just build it.
 - **constraint** **NEVER** work on main.  Create a new branch for the changes
 - Implement the code and cut a Pull Request (PR) referencing the original issue. Opening the PR is the deliverable — don't finish without it.
 

@@ -93,11 +93,14 @@ open (CC-21), so no log is emitted for those transitions.
   `A/C power on`, etc.) so a customer's log shows *why* a device changed without
   needing engine internals.
 
-Logged by `controller.py` in `_run`, at **INFO**, before commands are issued. The
-threshold context lists the room temperature and the target/medium/high
-thresholds for each device type the room actually has — the same data the
-troubleshooting scenarios in issue #14 need (e.g. "does the fan have the right
-thresholds?").
+Logged by `controller.py` in `_run`, at **INFO**, after the evaluation's commands
+have all been attempted, using the same per-command resolution that sent them —
+so the logged phrase always matches what was actually sent, even when an earlier
+command in the sequence (e.g. a `SetHvacMode`) changed the device's live range
+for a later one. The threshold context lists the room temperature and the
+target/medium/high thresholds for each device type the room actually has — the
+same data the troubleshooting scenarios in issue #14 need (e.g. "does the fan
+have the right thresholds?").
 
 ### Room target/offset edits (CC-L8)
 

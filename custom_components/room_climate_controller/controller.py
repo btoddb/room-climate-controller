@@ -183,21 +183,21 @@ def _describe_command(cmd: Command, room: Room) -> str:  # noqa: PLR0911
 
 def _threshold_context(room: Room, inputs: EngineInputs) -> str:
     """Compact room-temp + per-device threshold summary (CC-L7/CC-L11)."""
-    parts = [f"temp {inputs.room_temp:.0f}°F"]
+    parts = [f"temp {int(inputs.room_temp)}°F"]
     if room.has_ac:
         parts.append(
-            f"cooling target {inputs.target_cooling:.0f}°F "
-            f"(med {inputs.cooling_medium:.0f}°F high {inputs.cooling_high:.0f}°F)"
+            f"cooling target {int(inputs.target_cooling)}°F "
+            f"(med {int(inputs.cooling_medium)}°F high {int(inputs.cooling_high)}°F)"
         )
     if room.has_heater:
         parts.append(
-            f"heating target {inputs.target_heating:.0f}°F "
-            f"(med {inputs.heating_medium:.0f}°F high {inputs.heating_high:.0f}°F)"
+            f"heating target {int(inputs.target_heating)}°F "
+            f"(med {int(inputs.heating_medium)}°F high {int(inputs.heating_high)}°F)"
         )
     if room.has_fan:
         parts.append(
-            f"fan target {inputs.target_fan:.0f}°F "
-            f"(med {inputs.fan_medium:.0f}°F high {inputs.fan_high:.0f}°F)"
+            f"fan target {int(inputs.target_fan)}°F "
+            f"(med {int(inputs.fan_medium)}°F high {int(inputs.fan_high)}°F)"
         )
     return "; ".join(parts)
 
@@ -435,16 +435,7 @@ class RoomController:
                 "yes" if inputs.window_open else "no",
             )
             commands = compute_commands(inputs)
-            action_cmds = [
-                self._resolve_command(c) for c in commands if not isinstance(c, Delay)
-            ]
-            if action_cmds:
-                _LOGGER.info(
-                    "[room=%s] RCC commanded: %s (%s)",
-                    self.room.key,
-                    ", ".join(_describe_command(c, self.room) for c in action_cmds),
-                    _threshold_context(self.room, inputs),
-                )
+            action_descriptions: list[str] = []
             for cmd in commands:
                 if isinstance(cmd, Delay):
                     await asyncio.sleep(cmd.ms / 1000)
@@ -454,21 +445,11 @@ class RoomController:
                 # mode-dependent range (off vs cool), and any preceding
                 # SetHvacMode has already switched it, so this reflects the
                 # range the device will actually validate against (CC-9).
+                # Resolved once here and reused for both the service call and
+                # the CC-L7 description, so the log always matches what was
+                # actually sent.
                 resolved_cmd = self._resolve_command(cmd)
-                if isinstance(
-                    resolved_cmd, SetTemperature
-                ) and not self._device_reports_setpoint(resolved_cmd.entity_id):
-                    # CC-19/CC-23: a non-reporting device can never be confirmed
-                    # to have converged, so the engine (re)sends every
-                    # evaluation. Logged so this expected spam is distinguishable
-                    # from a device repeatedly rejecting/reverting a setpoint.
-                    _LOGGER.info(
-                        "Room %s: %s doesn't report its setpoint — "
-                        "sending SetTemperature(%s°F) unconditionally",
-                        self.room.key,
-                        resolved_cmd.entity_id,
-                        resolved_cmd.temperature,
-                    )
+                action_descriptions.append(_describe_command(resolved_cmd, self.room))
                 domain, service, data = _service_for(resolved_cmd)
                 # Isolate each call: one device rejecting a command (e.g. a
                 # transient out-of-range setpoint) must not abandon the
@@ -487,6 +468,13 @@ class RoomController:
                         service,
                         data,
                     )
+            if action_descriptions:
+                _LOGGER.info(
+                    "[room=%s] RCC commanded: %s (%s)",
+                    self.room.key,
+                    ", ".join(action_descriptions),
+                    _threshold_context(self.room, inputs),
+                )
         except asyncio.CancelledError:
             raise
         except Exception:

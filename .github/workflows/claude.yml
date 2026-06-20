@@ -149,6 +149,10 @@ jobs:
     needs: dispatch
     if: needs.dispatch.outputs.route == 'review'
     runs-on: ubuntu-latest
+    env:
+      # Single source of truth for this job's --effort, so the log-model.sh
+      # comment can't drift from the flag below when this gets bumped.
+      CLAUDE_EFFORT: medium
     permissions:
       contents: read
       pull-requests: write
@@ -189,14 +193,14 @@ jobs:
           # reasoning depth. Medium for now while we're still ironing out CI.
           claude_args: |
             --model claude-opus-4-8
-            --effort medium
+            --effort ${{ env.CLAUDE_EFFORT }}
             --allowedTools "Read,Glob,Grep,Bash(pytest *),Bash(scripts/lint),Bash(scripts/lint *)"
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
-        run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Review"
+        run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Review" "${{ env.CLAUDE_EFFORT }}"
 
   # Planning phase: Opus reads the codebase and posts a plan comment. It does NOT
   # write code. The job then inspects the plan comment to decide whether
@@ -205,6 +209,10 @@ jobs:
     needs: dispatch
     if: needs.dispatch.outputs.route == 'plan'
     runs-on: ubuntu-latest
+    env:
+      # Single source of truth for this job's --effort, so the log-model.sh
+      # comment can't drift from the flag below when this gets bumped.
+      CLAUDE_EFFORT: medium
     permissions:
       contents: read
       issues: write
@@ -235,13 +243,13 @@ jobs:
           # Medium for now while we're still ironing out CI.
           claude_args: |
             --model claude-opus-4-8
-            --effort medium
+            --effort ${{ env.CLAUDE_EFFORT }}
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
-        run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number }}" "Planning"
+        run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number }}" "Planning" "${{ env.CLAUDE_EFFORT }}"
       - name: Decide whether to auto-implement
         id: gate
         env:
@@ -275,6 +283,10 @@ jobs:
         (needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true' && needs.dispatch.outputs.plan_only == 'false')
       ) }}
     runs-on: ubuntu-latest
+    env:
+      # Single source of truth for this job's --effort, so the log-model.sh
+      # comment can't drift from the flag below when this gets bumped.
+      CLAUDE_EFFORT: medium
     permissions:
       contents: write
       pull-requests: write
@@ -346,7 +358,7 @@ jobs:
           # on mechanical execution work like this job.
           claude_args: |
             --model claude-sonnet-4-6
-            --effort medium
+            --effort ${{ env.CLAUDE_EFFORT }}
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(pytest *),Bash(scripts/lint),Bash(scripts/lint *)"
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
@@ -362,4 +374,4 @@ jobs:
               --json number --jq '.[0].number // ""')"
             [ -n "$pr" ] && target="$pr"
           fi
-          bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "$target" "Implementation"
+          bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "$target" "Implementation" "${{ env.CLAUDE_EFFORT }}"

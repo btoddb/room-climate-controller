@@ -3,12 +3,16 @@
 # run — NOT the requested --model. The id is read from the action's
 # execution_file (path passed via the $EXECUTION_FILE env var).
 #
-# Usage: log-model.sh <issue-or-pr-number> <phase-label>
+# Usage: log-model.sh <issue-or-pr-number> <phase-label> [effort]
 #   `gh issue comment` accepts a PR number too, since PRs are issues.
+#   `effort` is the --effort value the job requested (e.g. "medium"); pass it
+#   along so the comment records what was actually configured, not just the
+#   model id. Omit it for jobs that don't pass --effort.
 set -euo pipefail
 
 number="${1:?issue/PR number required}"
 phase="${2:-Run}"
+effort="${3:-}"
 
 model="unknown"
 if [ -n "${EXECUTION_FILE:-}" ] && [ -f "$EXECUTION_FILE" ]; then
@@ -23,6 +27,9 @@ if [ -n "${EXECUTION_FILE:-}" ] && [ -f "$EXECUTION_FILE" ]; then
   [ -n "$found" ] && model="$found"
 fi
 
+effort_suffix=""
+[ -n "$effort" ] && effort_suffix=" at \`${effort}\` effort"
+
 gh issue comment "$number" \
   --repo "$GITHUB_REPOSITORY" \
-  --body "🤖 ${phase} ran on model \`${model}\`."
+  --body "🤖 ${phase} ran on model \`${model}\`${effort_suffix}."

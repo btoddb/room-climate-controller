@@ -605,13 +605,67 @@ def test_combined_setpoint_idempotent_at_clamped_value():
     assert not any(isinstance(c, SetTemperature) for c in cmds)
 
 
-def test_set_temperature_sent_when_setpoint_unknown():
-    """SetTemperature is sent when current_setpoint is None (device state unknown)."""
+def test_set_temperature_sent_when_setpoint_unknown_and_entering():
+    """An unknown setpoint sends SetTemperature on a mode transition (off -> cool)."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(hvac="off", fan_modes=("low", "high"), current_setpoint=None),
+            use_ac=True,
+            room_temp=80.0,
+        )
+    )
+    assert any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_set_temperature_resent_when_setpoint_unknown_and_steady():
+    """
+    CC-19/CC-23 (issue #31 follow-up).
+
+    A device that never reports its setpoint can't be confirmed to have
+    converged, so the engine (re)sends SetTemperature every evaluation —
+    mirroring CC-23's "unknown never matches" convention for fan direction.
+    The controller logs that the device is non-reporting so this expected
+    spam is distinguishable from a genuine setpoint mismatch.
+    """
     cmds = compute_commands(
         _base(
             ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=None),
             use_ac=True,
             room_temp=80.0,
+        )
+    )
+    assert any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_split_heater_setpoint_resent_when_unknown_and_steady():
+    """Same always-resend behavior as the split A/C case, for the heater."""
+    cmds = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="heat", hvac_modes=("off", "heat"), current_setpoint=None
+            ),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
+        )
+    )
+    assert any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_combined_setpoint_resent_when_unknown_and_steady():
+    """Same always-resend behavior as the split A/C case, for combined mode."""
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="heat",
+                hvac_modes=("off", "cool", "heat"),
+                current_setpoint=None,
+            ),
+            use_ac=True,
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=68.0,
         )
     )
     assert any(isinstance(c, SetTemperature) for c in cmds)

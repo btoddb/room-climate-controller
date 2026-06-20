@@ -51,6 +51,44 @@ def fan_direction_via_preset(hass: HomeAssistant, entity_id: str | None) -> bool
     return "reverse" in (state.attributes.get("preset_modes") or [])
 
 
+def describe_climate_capabilities(hass: HomeAssistant, entity_id: str | None) -> str:
+    """
+    One-line capability summary for a climate entity (CC-L10).
+
+    Shared by ``controller.py`` (logged when the controller starts) and
+    ``config_flow.py`` (logged when the entity is selected in room setup) so the
+    two DEBUG dumps never drift apart.
+    """
+    if not entity_id:
+        return "none"
+    state = hass.states.get(entity_id)
+    if state is None:
+        return f"{entity_id} (unavailable)"
+    attrs = state.attributes
+    hvac_modes = list(attrs.get("hvac_modes") or ())
+    return (
+        f"{entity_id}: hvac_modes={hvac_modes}, "
+        f"fan_only={'yes' if 'fan_only' in hvac_modes else 'no'}, "
+        f"fan_modes={list(attrs.get('fan_modes') or ())}, "
+        f"min_temp={attrs.get('min_temp')}, max_temp={attrs.get('max_temp')}"
+    )
+
+
+def describe_fan_capabilities(hass: HomeAssistant, entity_id: str | None) -> str:
+    """One-line capability summary for a fan entity (CC-L10). See above."""
+    if not entity_id:
+        return "none"
+    state = hass.states.get(entity_id)
+    if state is None:
+        return f"{entity_id} (unavailable)"
+    attrs = state.attributes
+    return (
+        f"{entity_id}: preset_modes={list(attrs.get('preset_modes') or ())}, "
+        f"reversible={'yes' if fan_supports_direction(hass, entity_id) else 'no'}, "
+        f"percentage_step={attrs.get('percentage_step')}"
+    )
+
+
 def resolve_room_entity(
     hass: HomeAssistant, entry_id: str, room_key: str, key: str, domain: str
 ) -> str | None:

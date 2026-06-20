@@ -147,6 +147,7 @@ class RoomNumber(RestoreNumber):
         self._attr_native_unit_of_measurement = TEMP_UNIT
         self._attr_device_info = room_device_info(entry, room)
         self._default = spec.default
+        self._room_key = room.key
 
     async def async_added_to_hass(self) -> None:
         """Restore the last value or fall back to the default."""
@@ -159,8 +160,13 @@ class RoomNumber(RestoreNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the value."""
+        old = self._attr_native_value
         self._attr_native_value = value
         self.async_write_ha_state()
+        if old != value:
+            _LOGGER.info(
+                "[room=%s] %s → %s°F", self._room_key, self._attr_name, int(value)
+            )
 
 
 class ProfilePresetNumber(ProfileRemovalMixin, RestoreNumber):

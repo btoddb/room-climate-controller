@@ -236,10 +236,11 @@ class ProfileEnabledSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile schedule enabled",
             room_key,
-            self._profile_id,
+            profile_name,
         )
 
     async def async_turn_off(self, **_kwargs: Any) -> None:
@@ -247,10 +248,11 @@ class ProfileEnabledSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile schedule disabled",
             room_key,
-            self._profile_id,
+            profile_name,
         )
 
     @callback
@@ -284,10 +286,11 @@ class ProfileUseSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: %s use → on",
             room_key,
-            self._profile_id,
+            profile_name,
             self._device,
         )
 
@@ -296,10 +299,11 @@ class ProfileUseSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: %s use → off",
             room_key,
-            self._profile_id,
+            profile_name,
             self._device,
         )
 
@@ -328,10 +332,11 @@ class ProfileFanOverrideSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan-only override → on",
             room_key,
-            self._profile_id,
+            profile_name,
         )
 
     async def async_turn_off(self, **_kwargs: Any) -> None:
@@ -339,10 +344,11 @@ class ProfileFanOverrideSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan-only override → off",
             room_key,
-            self._profile_id,
+            profile_name,
         )
 
     @callback
@@ -368,10 +374,11 @@ class ProfileFanReverseSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan reverse → on",
             room_key,
-            self._profile_id,
+            profile_name,
         )
 
     async def async_turn_off(self, **_kwargs: Any) -> None:
@@ -379,10 +386,11 @@ class ProfileFanReverseSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
+        profile_name = profile.name if profile else "unknown"
         _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan reverse → off",
             room_key,
-            self._profile_id,
+            profile_name,
         )
 
     @callback

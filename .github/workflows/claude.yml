@@ -184,8 +184,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # TODO: bump to --effort xhigh once the plan/implement/review pipeline
+          # is stable — review is the pre-merge safety net, worth the extra
+          # reasoning depth. Medium for now while we're still ironing out CI.
           claude_args: |
             --model claude-opus-4-8
+            --effort medium
             --allowedTools "Read,Glob,Grep,Bash(pytest *),Bash(scripts/lint),Bash(scripts/lint *)"
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
@@ -225,8 +229,13 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # TODO: bump to --effort xhigh once the plan/implement/review pipeline
+          # is stable — a weak plan cascades into a wrong implementation, so
+          # this is the highest-leverage spot for extra reasoning depth.
+          # Medium for now while we're still ironing out CI.
           claude_args: |
             --model claude-opus-4-8
+            --effort medium
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''
         env:
@@ -330,8 +339,14 @@ jobs:
           # version of this line only listed the Bash entries and every run
           # died at the first `Read`, 0/7 todos checked off). List the normal
           # file tools explicitly alongside the Bash grant.
+          #
+          # TODO: bump to --effort high (Sonnet 4.6's default) once the
+          # pipeline is stable. Medium for now while we're still ironing out
+          # CI — don't go to `max`, the docs warn it's prone to overthinking
+          # on mechanical execution work like this job.
           claude_args: |
             --model claude-sonnet-4-6
+            --effort medium
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(pytest *),Bash(scripts/lint),Bash(scripts/lint *)"
       - name: Log actual model used
         if: always() && steps.claude.outputs.execution_file != ''

@@ -71,6 +71,7 @@ implementation. This is automatic; you don't need to report your own model.
 - **constraint** The gate already validated a plan exists in a real (non-sandboxed) check before you ran — do not re-verify markers yourself or comment on whether any marker is present/missing in your PR summary. If you were invoked, a valid plan was already found; just build it.
 - **constraint** **NEVER** work on main.  Create a new branch for the changes
 - Implement the code and cut a Pull Request (PR) referencing the original issue. Opening the PR is the deliverable — don't finish without it.
+- **constraint** Actually call `gh pr create` yourself once your commits are pushed. The underlying action does not open PRs by default — left alone, it only pushes the branch and posts a compare/quick_pull link for a human to click, which does **not** satisfy the line above. `Bash(gh pr create *)` is granted for exactly this; use it instead of leaving a link.
 
 #### What Not to Commit
 - Build artifacts, generated bundles, and compiled outputs (unless the project explicitly tracks them).

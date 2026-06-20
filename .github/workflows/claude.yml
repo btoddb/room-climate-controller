@@ -142,6 +142,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Response"
+      # Hard failure (usage/token limit, API error, timeout) -> never go silent.
+      - name: Report failure to @btoddb
+        if: failure() && steps.claude.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: bash "$RUNNER_TEMP/ci-scripts/report-failure.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Response"
 
   # Review phase: Opus performs a line-by-line PR review. `contents` is read-only
   # so the job structurally cannot change code — it only posts review comments.
@@ -201,6 +208,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Review" "${{ env.CLAUDE_EFFORT }}"
+      # Hard failure (usage/token limit, API error, timeout) -> never go silent.
+      - name: Report failure to @btoddb
+        if: failure() && steps.claude.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: bash "$RUNNER_TEMP/ci-scripts/report-failure.sh" "${{ github.event.issue.number || github.event.pull_request.number }}" "Review"
 
   # Planning phase: Opus reads the codebase and posts a plan comment. It does NOT
   # write code. The job then inspects the plan comment to decide whether
@@ -271,6 +285,8 @@ jobs:
           REPO: ${{ github.repository }}
           STARTED_AT: ${{ steps.snapshot.outputs.started_at }}
           PLAN_ONLY: ${{ needs.dispatch.outputs.plan_only }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: |
           set -euo pipefail
 
@@ -284,10 +300,17 @@ jobs:
                   | last | .body // ""')"
 
           if [ -z "$plan" ]; then
-            # No plan was produced (model error, timeout, or a failed post).
-            # Never skip silently: alert @btoddb and fail the run so it's red.
-            gh issue comment "$ISSUE" --repo "$REPO" --body \
-              "🤖 @btoddb planning ran but produced **no plan comment**, so the pipeline could not hand off to implementation. Please re-run \`@claude plan\`. (This run is failed on purpose so the break is visible rather than a silent skip.)"
+            # No plan was produced. If the Plan step itself failed (model
+            # error, usage/token limit, timeout), use the failure-classifying
+            # helper so @btoddb learns *why* — not just that planning skipped.
+            # Otherwise (Claude succeeded but never posted a plan comment)
+            # keep the generic message; report-failure.sh would only guess.
+            if [ "$CLAUDE_OUTCOME" = "failure" ]; then
+              bash "$RUNNER_TEMP/ci-scripts/report-failure.sh" "$ISSUE" "Planning"
+            else
+              gh issue comment "$ISSUE" --repo "$REPO" --body \
+                "🤖 @btoddb planning ran but produced **no plan comment**, so the pipeline could not hand off to implementation. Please re-run \`@claude plan\`. (This run is failed on purpose so the break is visible rather than a silent skip.)"
+            fi
             echo "proceed=false" >> "$GITHUB_OUTPUT"
             echo "::error::Planning produced no plan comment; failing so the skip is never silent."
             exit 1
@@ -431,3 +454,19 @@ jobs:
             [ -n "$pr" ] && target="$pr"
           fi
           bash "$RUNNER_TEMP/ci-scripts/log-model.sh" "$target" "Implementation" "${{ env.CLAUDE_EFFORT }}"
+      # Hard failure (usage/token limit, API error, timeout) -> never go silent.
+      - name: Report failure to @btoddb
+        if: failure() && steps.claude.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          BRANCH_NAME: ${{ steps.claude.outputs.branch_name }}
+        run: |
+          # Prefer commenting on the PR this phase opened; fall back to the issue.
+          target="${{ github.event.issue.number }}"
+          if [ -n "$BRANCH_NAME" ]; then
+            pr="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH_NAME" \
+              --json number --jq '.[0].number // ""')"
+            [ -n "$pr" ] && target="$pr"
+          fi
+          bash "$RUNNER_TEMP/ci-scripts/report-failure.sh" "$target" "Implementation"

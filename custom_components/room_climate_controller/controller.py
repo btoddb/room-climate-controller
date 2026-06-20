@@ -186,7 +186,7 @@ def _describe_command(cmd: Command, room: Room) -> str:  # noqa: PLR0911
 
 
 def _threshold_context(room: Room, inputs: EngineInputs) -> str:
-    """Compact room-temp + per-device threshold summary (CC-L7/CC-L11)."""
+    """Compact room-temp + per-device threshold summary (CC-L7)."""
     parts = [f"temp {int(inputs.room_temp)}°F"]
     if room.has_ac:
         parts.append(

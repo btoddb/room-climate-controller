@@ -51,7 +51,7 @@ async def async_apply_profile(
             _PROFILE_LOGGER.info(
                 "[room=%s profile=%s] Profile '%s' skipped: manual mode active",
                 room.key,
-                profile.name,
+                profile.id,
                 profile.name,
             )
             return
@@ -64,7 +64,7 @@ async def async_apply_profile(
     _PROFILE_LOGGER.info(
         "[room=%s profile=%s] Profile '%s' applied (%s): %s",
         room.key,
-        profile.name,
+        profile.id,
         profile.name,
         "explicit" if force else "scheduled",
         settings or "no presets",

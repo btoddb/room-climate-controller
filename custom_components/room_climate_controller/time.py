@@ -96,7 +96,7 @@ class ProfileTime(ProfileRemovalMixin, TimeEntity, RestoreEntity):
                 _PROFILE_LOGGER.info(
                     "[room=%s profile=%s] Profile schedule time → %02d:%02d",
                     profile.room,
-                    profile.name,
+                    self._profile_id,
                     value.hour,
                     value.minute,
                 )

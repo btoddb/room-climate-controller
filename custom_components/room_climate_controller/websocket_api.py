@@ -37,6 +37,7 @@ from .const import (
     KEY_ROOM_TEMPERATURE,
     KEY_TARGET,
     KEY_USE,
+    LOGGER_PROFILE,
     SIGNAL_ADD_PROFILE_ENTITIES,
     SIGNAL_REMOVE_PROFILE,
 )
@@ -59,7 +60,7 @@ from .models import (
 if TYPE_CHECKING:
     from .hub import RoomClimateConfigEntry
 
-_LOGGER = logging.getLogger(__name__)
+_PROFILE_LOGGER = logging.getLogger(LOGGER_PROFILE)
 
 
 @callback
@@ -329,8 +330,11 @@ async def ws_create_profile(
 
     hub.profiles.append(profile)
     await hub.async_save()
-    _LOGGER.info(
-        "[room=%s profile=%s] Profile created: '%s'", room.key, profile.id, profile.name
+    _PROFILE_LOGGER.info(
+        "[room=%s profile=%s] Profile created: '%s'",
+        room.key,
+        profile.id,
+        profile.name,
     )
     async_dispatcher_send(hass, SIGNAL_ADD_PROFILE_ENTITIES, profile)
     if hub.scheduler:
@@ -367,8 +371,11 @@ async def ws_delete_profile(
 
     hub.profiles = [p for p in hub.profiles if p.id != pid]
     await hub.async_save()
-    _LOGGER.info(
-        "[room=%s profile=%s] Profile deleted: '%s'", profile.room, pid, profile.name
+    _PROFILE_LOGGER.info(
+        "[room=%s profile=%s] Profile deleted: '%s'",
+        profile.room,
+        pid,
+        profile.name,
     )
     async_dispatcher_send(hass, SIGNAL_REMOVE_PROFILE, pid)
     _remove_profile_device(hass, entry, pid)
@@ -410,7 +417,7 @@ async def ws_rename_profile(
     old_name = profile.name
     profile.name = name
     await hub.async_save()
-    _LOGGER.info(
+    _PROFILE_LOGGER.info(
         "[room=%s profile=%s] Profile renamed: '%s' → '%s'",
         profile.room,
         pid,
@@ -458,18 +465,10 @@ async def ws_set_room(
         )
         return
 
-    old_room = profile.room
     # The profile's preset entities depend on the room's device set, so rebuild
     # cleanly via reload rather than surgically swapping entities.
     hub.profiles = [p.reassigned_to(room) if p.id == pid else p for p in hub.profiles]
     await hub.async_save()
-    _LOGGER.info(
-        "[room=%s profile=%s] Profile moved: %s → %s",
-        room.key,
-        pid,
-        old_room,
-        room.key,
-    )
     await hass.config_entries.async_reload(entry.entry_id)
     connection.send_result(msg["id"], {"success": True})
 

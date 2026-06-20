@@ -22,6 +22,8 @@ from .const import (
     KEY_PROFILE_FAN_REVERSE,
     KEY_PROFILE_USE,
     KEY_USE,
+    LOGGER_PROFILE,
+    LOGGER_SETTINGS,
     SIGNAL_ADD_PROFILE_ENTITIES,
 )
 from .entity import ProfileRemovalMixin, profile_device_info, room_device_info
@@ -33,6 +35,8 @@ if TYPE_CHECKING:
     from .hub import RoomClimateConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
+_SETTINGS_LOGGER = logging.getLogger(LOGGER_SETTINGS)
+_PROFILE_LOGGER = logging.getLogger(LOGGER_PROFILE)
 
 
 @dataclass(frozen=True)
@@ -177,7 +181,7 @@ class RoomSwitch(_BaseRestoreSwitch):
 
     @callback
     def _on_change(self) -> None:
-        _LOGGER.info(
+        _SETTINGS_LOGGER.info(
             "[room=%s] Toggle '%s' → %s",
             self._room_key,
             self._attr_name,
@@ -232,7 +236,7 @@ class ProfileEnabledSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile schedule enabled",
             room_key,
             self._profile_id,
@@ -243,7 +247,7 @@ class ProfileEnabledSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile schedule disabled",
             room_key,
             self._profile_id,
@@ -280,7 +284,7 @@ class ProfileUseSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: %s use → on",
             room_key,
             self._profile_id,
@@ -292,7 +296,7 @@ class ProfileUseSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: %s use → off",
             room_key,
             self._profile_id,
@@ -324,7 +328,7 @@ class ProfileFanOverrideSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan-only override → on",
             room_key,
             self._profile_id,
@@ -335,7 +339,7 @@ class ProfileFanOverrideSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan-only override → off",
             room_key,
             self._profile_id,
@@ -364,7 +368,7 @@ class ProfileFanReverseSwitch(_BaseProfileSwitch):
         await super().async_turn_on(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan reverse → on",
             room_key,
             self._profile_id,
@@ -375,7 +379,7 @@ class ProfileFanReverseSwitch(_BaseProfileSwitch):
         await super().async_turn_off(**_kwargs)
         profile = self._entry.runtime_data.get_profile(self._profile_id)
         room_key = profile.room if profile else "unknown"
-        _LOGGER.info(
+        _PROFILE_LOGGER.info(
             "[room=%s profile=%s] Profile preset edited: fan reverse → off",
             room_key,
             self._profile_id,

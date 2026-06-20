@@ -22,6 +22,8 @@ from .const import (
     KEY_MEDIUM_OFFSET,
     KEY_TARGET,
     KEY_USE,
+    LOGGER_CAPABILITIES,
+    LOGGER_SENSOR,
 )
 from .engine import (
     ClimateInfo,
@@ -57,6 +59,8 @@ if TYPE_CHECKING:
     from .hub import RoomClimateConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
+_SENSOR_LOGGER = logging.getLogger(LOGGER_SENSOR)
+_CAPABILITIES_LOGGER = logging.getLogger(LOGGER_CAPABILITIES)
 
 _INVALID = (None, "", STATE_UNKNOWN, STATE_UNAVAILABLE, "none")
 
@@ -182,7 +186,7 @@ def _describe_command(cmd: Command, room: Room) -> str:  # noqa: PLR0911
 
 
 def _threshold_context(room: Room, inputs: EngineInputs) -> str:
-    """Compact room-temp + per-device threshold summary (CC-L7/CC-L11)."""
+    """Compact room-temp + per-device threshold summary (CC-L7)."""
     parts = [f"temp {int(inputs.room_temp)}°F"]
     if room.has_ac:
         parts.append(
@@ -221,7 +225,7 @@ class RoomController:
     def async_start(self) -> None:
         """Subscribe and run an initial evaluation."""
         self._resubscribe()
-        self.async_request_run()
+        self.async_request_run(trigger="startup")
         self._log_capabilities()
         # Pick up our own entities that register a moment after setup.
         self.entry.async_on_unload(
@@ -241,12 +245,12 @@ class RoomController:
     @callback
     def _delayed_resubscribe(self, _now: object) -> None:
         self._resubscribe()
-        self.async_request_run()
+        self.async_request_run(trigger="startup")
         self._log_capabilities()
 
     def _log_capabilities(self) -> None:
         """
-        Dump each configured climate/fan entity's capabilities at DEBUG (CC-L10).
+        Dump each configured climate/fan entity's capabilities at INFO (CC-L10).
 
         Called at startup and again after the delayed resubscribe, since an
         entity registered by another integration may not have a state yet when
@@ -254,31 +258,31 @@ class RoomController:
         """
         room = self.room
         if room.has_ac:
-            _LOGGER.debug(
+            _CAPABILITIES_LOGGER.info(
                 "[room=%s] A/C capabilities: %s",
                 room.key,
                 describe_climate_capabilities(self.hass, room.ac_climate),
             )
             if room.ac_fan_entity:
-                _LOGGER.debug(
+                _CAPABILITIES_LOGGER.info(
                     "[room=%s] A/C fan capabilities: %s",
                     room.key,
                     describe_fan_capabilities(self.hass, room.ac_fan_entity),
                 )
         if room.has_heater and not room.combined:
-            _LOGGER.debug(
+            _CAPABILITIES_LOGGER.info(
                 "[room=%s] Heater capabilities: %s",
                 room.key,
                 describe_climate_capabilities(self.hass, room.heater_climate),
             )
             if room.heater_fan_entity:
-                _LOGGER.debug(
+                _CAPABILITIES_LOGGER.info(
                     "[room=%s] Heater fan capabilities: %s",
                     room.key,
                     describe_fan_capabilities(self.hass, room.heater_fan_entity),
                 )
         if room.has_fan and room.fan_entity:
-            _LOGGER.debug(
+            _CAPABILITIES_LOGGER.info(
                 "[room=%s] Fan capabilities: %s",
                 room.key,
                 describe_fan_capabilities(self.hass, room.fan_entity),
@@ -335,45 +339,53 @@ class RoomController:
         new = data["new_state"]
         old_val = old.state if old else None
         new_val = new.state if new else None
-        if old_val != new_val:
-            if entity_id == self.room.temperature_sensor:
-                _LOGGER.info(
-                    "[room=%s] Temperature changed: %s → %s°F%s",
+        changed = old_val != new_val
+        if entity_id == self.room.humidity_sensor:
+            # CC-L2: humidity must never command a device — the engine ignores
+            # humidity entirely, so short-circuit unconditionally (regardless of
+            # ``changed``) rather than resubscribing/requesting a run that could
+            # flush an owed command from an unrelated change. Only log when the
+            # value actually moved.
+            if changed:
+                _SENSOR_LOGGER.info(
+                    "[room=%s] Humidity changed: %s → %s%%",
                     self.room.key,
                     old_val,
                     new_val,
-                    self._command_suffix(),
                 )
-            elif entity_id == self.room.humidity_sensor:
-                _LOGGER.info(
-                    "[room=%s] Humidity changed: %s → %s%%%s",
-                    self.room.key,
-                    old_val,
-                    new_val,
-                    self._command_suffix(),
-                )
-            elif entity_id in self.room.window_sensors:
-                state_label = "opened" if new_val == "on" else "closed"
-                _LOGGER.info(
-                    "[room=%s] Window %s %s",
-                    self.room.key,
-                    entity_id,
-                    state_label,
-                )
+            return
+        trigger = f"{entity_id} changed"
+        if changed and entity_id == self.room.temperature_sensor:
+            _SENSOR_LOGGER.info(
+                "[room=%s] Temperature changed: %s → %s°F",
+                self.room.key,
+                old_val,
+                new_val,
+            )
+            trigger = f"temperature {old_val}→{new_val}°F"
+        elif changed and entity_id in self.room.window_sensors:
+            state_label = "opened" if new_val == "on" else "closed"
+            _SENSOR_LOGGER.info(
+                "[room=%s] Window %s %s",
+                self.room.key,
+                entity_id,
+                state_label,
+            )
+            trigger = f"window {entity_id} {state_label}"
         self._resubscribe()
-        self.async_request_run()
+        self.async_request_run(trigger=trigger)
 
     def _resolve_command(self, cmd: Command) -> Command:
         """
         Resolve a command against the device's *live* state before it is sent.
 
         Currently this clamps a ``SetTemperature`` into the device's reported
-        ``min_temp``/``max_temp`` range (CC-9). Used by both ``_run`` (at send
-        time) and ``_command_suffix`` (the diagnostic) so the logged value
-        matches what is actually sent. The diagnostic reads the range in the
-        device's *current* mode, so for a command sequence that first switches
-        HVAC mode it is a best-effort prediction; ``_run`` resolves each command
-        in order, after the preceding mode switch, against the real range.
+        ``min_temp``/``max_temp`` range (CC-9). Used by ``_run`` both at send
+        time and when rendering the CC-L7 description, so the logged value
+        always matches what is actually sent. ``_run`` resolves each command in
+        order, after any preceding ``SetHvacMode`` in the same evaluation, so
+        the live range read here reflects what the device will actually
+        validate against.
         """
         if isinstance(cmd, SetTemperature):
             state = self.hass.states.get(cmd.entity_id)
@@ -390,50 +402,21 @@ class RoomController:
         state = self.hass.states.get(entity_id)
         return bool(state) and state.attributes.get("temperature") is not None
 
-    def _command_suffix(self) -> str:
-        """
-        Describe the device commands the current state would produce, if any.
-
-        Returns ``" (device commanded: <cmds>)"`` listing the non-delay commands,
-        or ``""`` when nothing would be sent. The command list is the diagnostic
-        that explains *why* a device reacted to a sub-degree sensor change.
-        """
-        inputs = self._build_inputs()
-        if inputs is None:
-            return ""
-        cmds = [
-            self._resolve_command(c)
-            for c in compute_commands(inputs)
-            if not isinstance(c, Delay)
-        ]
-        if not cmds:
-            return ""
-        return f" (device commanded: {', '.join(repr(c) for c in cmds)})"
-
     # -- evaluation ----------------------------------------------------------
     @callback
-    def async_request_run(self) -> None:
+    def async_request_run(self, trigger: str = "evaluation") -> None:
         """Restart the evaluation task (restart semantics, like the blueprint)."""
         if self._task and not self._task.done():
             self._task.cancel()
         self._task = self.hass.async_create_task(
-            self._run(), f"{DOMAIN} control {self.room.key}"
+            self._run(trigger), f"{DOMAIN} control {self.room.key}"
         )
 
-    async def _run(self) -> None:
+    async def _run(self, trigger: str = "evaluation") -> None:
         try:
             inputs = self._build_inputs()
             if inputs is None:
                 return
-            _LOGGER.debug(
-                "[room=%s] %s; use ac=%s heater=%s fan=%s window_open=%s",
-                self.room.key,
-                _threshold_context(self.room, inputs),
-                inputs.use_ac,
-                inputs.use_heater,
-                inputs.use_fan,
-                "yes" if inputs.window_open else "no",
-            )
             commands = compute_commands(inputs)
             action_descriptions: list[str] = []
             for cmd in commands:
@@ -470,9 +453,10 @@ class RoomController:
                     )
             if action_descriptions:
                 _LOGGER.info(
-                    "[room=%s] RCC commanded: %s (%s)",
+                    "[room=%s] RCC commanded: %s (trigger: %s; %s)",
                     self.room.key,
                     ", ".join(action_descriptions),
+                    trigger,
                     _threshold_context(self.room, inputs),
                 )
         except asyncio.CancelledError:

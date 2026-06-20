@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import KEY_PROFILE_TIME, SIGNAL_ADD_PROFILE_ENTITIES
+from .const import KEY_PROFILE_TIME, LOGGER_PROFILE, SIGNAL_ADD_PROFILE_ENTITIES
 from .entity import ProfileRemovalMixin, profile_device_info
 from .models import Profile, normalize_time_hhmm, profile_uid
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     from .hub import RoomClimateConfigEntry
 
-_LOGGER = logging.getLogger(__name__)
+_PROFILE_LOGGER = logging.getLogger(LOGGER_PROFILE)
 
 
 async def async_setup_entry(
@@ -93,7 +93,7 @@ class ProfileTime(ProfileRemovalMixin, TimeEntity, RestoreEntity):
         if old != value:
             profile = self._entry.runtime_data.get_profile(self._profile_id)
             if profile is not None:
-                _LOGGER.info(
+                _PROFILE_LOGGER.info(
                     "[room=%s profile=%s] Profile schedule time → %02d:%02d",
                     profile.room,
                     self._profile_id,

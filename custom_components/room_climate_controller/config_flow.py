@@ -51,11 +51,13 @@ from .const import (
     DEVICE_FAN,
     DEVICE_HEATING,
     DOMAIN,
+    LOGGER_CAPABILITIES,
     SUBENTRY_TYPE_ROOM,
 )
 from .entity import describe_climate_capabilities, describe_fan_capabilities
 
 _LOGGER = logging.getLogger(__name__)
+_CAPABILITIES_LOGGER = logging.getLogger(LOGGER_CAPABILITIES)
 
 
 class RoomClimateConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -238,7 +240,7 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
 
     def _log_device_capabilities(self) -> None:
         """
-        Dump the selected climate/fan entities' capabilities at DEBUG (CC-L10).
+        Dump the selected climate/fan entities' capabilities at INFO (CC-L10).
 
         Answers "does this A/C have a fan_only mode?" / "what fan modes does it
         support?" directly from room setup, sharing the same formatting helpers
@@ -250,7 +252,7 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
             ("Heater", CONF_HEATER_CLIMATE),
         ):
             if entity_id := self._data.get(key):
-                _LOGGER.debug(
+                _CAPABILITIES_LOGGER.info(
                     "[room=%s] %s capabilities: %s",
                     room_key,
                     label,
@@ -262,7 +264,7 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
             ("Heater fan", CONF_HEATER_FAN_ENTITY),
         ):
             if entity_id := self._data.get(key):
-                _LOGGER.debug(
+                _CAPABILITIES_LOGGER.info(
                     "[room=%s] %s capabilities: %s",
                     room_key,
                     label,

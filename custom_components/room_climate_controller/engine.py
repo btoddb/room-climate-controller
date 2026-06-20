@@ -38,6 +38,8 @@ _OFF_LIKE = frozenset({"off", "unavailable", "unknown", "none", "", None})
 HYSTERESIS_OFF: Final = 0.2
 HYSTERESIS_ON: Final = 1.0
 
+MAX_PERCENTAGE: Final = 100.0
+
 
 def _wants_cool(room: float, target: float, running: bool) -> bool:  # noqa: FBT001
     """Cooling-style hysteresis (CC-27): hold near target, restart a degree past it."""
@@ -615,12 +617,11 @@ def _same_fan_speed(reported: int, target: int, step: float) -> bool:
     index instead of raw percentage makes the de-dup idempotent, so the fan
     isn't re-commanded on every evaluation.
     """
-    _max_percentage = 100.0
-    if step <= 1.0 or step >= _max_percentage:
+    if step <= 1.0 or step >= MAX_PERCENTAGE:
         return reported == target
-    count = round(_max_percentage / step)
-    desired = min(max(ceil(target / _max_percentage * count), 1), count)
-    current = min(max(round(reported / _max_percentage * count), 0), count)
+    count = round(MAX_PERCENTAGE / step)
+    desired = min(max(ceil(target / MAX_PERCENTAGE * count), 1), count)
+    current = min(max(round(reported / MAX_PERCENTAGE * count), 0), count)
     return current == desired
 
 

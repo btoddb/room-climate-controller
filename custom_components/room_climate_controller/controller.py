@@ -457,6 +457,7 @@ class RoomController:
             hvac_modes=tuple(attrs.get("hvac_modes") or ()),
             fan_modes=tuple(attrs.get("fan_modes") or ()),
             min_temp=attrs.get("min_temp"),
+            max_temp=attrs.get("max_temp"),
             supports_set_temp=bool(features & 1),
             current_setpoint=float(raw_setpoint) if raw_setpoint is not None else None,
         )

@@ -92,6 +92,7 @@ def _climate(
     fan_mode=None,
     fan_modes=(),
     min_temp=62.0,
+    max_temp=None,
     set_temp=True,
     hvac_modes=("off", "cool"),
     current_setpoint=None,
@@ -103,6 +104,7 @@ def _climate(
         hvac_modes=hvac_modes,
         fan_modes=tuple(fan_modes),
         min_temp=min_temp,
+        max_temp=max_temp,
         supports_set_temp=set_temp,
         current_setpoint=current_setpoint,
     )
@@ -368,9 +370,7 @@ def test_standalone_fan_stepped_speed_grid_still_commands_from_off():
             room_temp=74.0,
         )
     )
-    assert any(
-        isinstance(c, FanSetPercentage) and c.percentage == 10 for c in cmds
-    )
+    assert any(isinstance(c, FanSetPercentage) and c.percentage == 10 for c in cmds)
 
 
 def test_standalone_fan_stepped_speed_grid_tier_change_still_commands():
@@ -389,9 +389,7 @@ def test_standalone_fan_stepped_speed_grid_tier_change_still_commands():
             room_temp=79.0,
         )
     )
-    assert any(
-        isinstance(c, FanSetPercentage) and c.percentage == 100 for c in cmds
-    )
+    assert any(isinstance(c, FanSetPercentage) and c.percentage == 100 for c in cmds)
 
 
 def test_no_redundant_fan_mode():
@@ -473,10 +471,12 @@ def test_combined_off_when_uses_disabled():
 
 def test_set_temperature_skipped_when_setpoint_already_correct():
     """SetTemperature skipped when device already has the target setpoint (CC-19)."""
-    # Split A/C: setpoint already at min_temp (62), no SetTemperature needed.
+    # Split A/C: setpoint already at the clamped min_temp (62 + 1° margin = 63,
+    # per CC-9 — the controller's send-time clamp never actually reports 62),
+    # no SetTemperature needed.
     cmds = compute_commands(
         _base(
-            ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=62.0),
+            ac=_climate(hvac="cool", fan_modes=("low", "high"), current_setpoint=63.0),
             use_ac=True,
             room_temp=80.0,
         )
@@ -522,6 +522,87 @@ def test_set_temperature_skipped_when_setpoint_already_correct():
         )
     )
     assert not any(isinstance(c, SetTemperature) for c in cmds_combined)
+
+
+def test_split_ac_setpoint_idempotent_at_clamped_value():
+    """
+    CC-9: dedup compares against the *clamped* target, not the raw one.
+
+    min_temp=65 means the engine's raw target is 65, but the controller's
+    send-time clamp (CC-9's 1° margin) means the device will actually report
+    66. Without comparing against the clamped value, this loops forever
+    (issue #28).
+    """
+    cmds = compute_commands(
+        _base(
+            ac=_climate(
+                hvac="cool",
+                fan_modes=("low", "high"),
+                min_temp=65.0,
+                current_setpoint=66.0,
+            ),
+            use_ac=True,
+            room_temp=80.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_split_ac_setpoint_still_emitted_when_genuinely_off():
+    """A setpoint that doesn't match the clamped target still gets corrected."""
+    cmds = compute_commands(
+        _base(
+            ac=_climate(
+                hvac="cool",
+                fan_modes=("low", "high"),
+                min_temp=65.0,
+                current_setpoint=70.0,
+            ),
+            use_ac=True,
+            room_temp=80.0,
+        )
+    )
+    temp_cmds = [c for c in cmds if isinstance(c, SetTemperature)]
+    assert len(temp_cmds) == 1
+    assert temp_cmds[0].temperature == 65
+
+
+def test_split_heater_setpoint_idempotent_at_clamped_value():
+    """CC-9: same idempotency fix as the split A/C case, for the heater branch."""
+    cmds = compute_commands(
+        _base(
+            heater=_climate(
+                hvac="heat",
+                hvac_modes=("off", "heat"),
+                min_temp=65.0,
+                current_setpoint=66.0,
+            ),
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=65.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
+
+
+def test_combined_setpoint_idempotent_at_clamped_value():
+    """CC-9: same idempotency fix as the split A/C case, for the combined branch."""
+    cmds = compute_commands(
+        _base(
+            combined=True,
+            ac=_climate(
+                hvac="heat",
+                hvac_modes=("off", "cool", "heat"),
+                min_temp=65.0,
+                current_setpoint=66.0,
+            ),
+            use_ac=True,
+            use_heater=True,
+            room_temp=60.0,
+            target_heating=65.0,
+        )
+    )
+    assert not any(isinstance(c, SetTemperature) for c in cmds)
 
 
 def test_set_temperature_sent_when_setpoint_unknown():

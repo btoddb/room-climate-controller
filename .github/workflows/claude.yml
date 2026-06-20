@@ -392,8 +392,15 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          additional_permissions: |
-            workflows: write
+          # No `additional_permissions: workflows: write` here: the Claude
+          # GitHub App's installation has no workflow-write permission at all
+          # (by design, per anthropics/claude-code-action's FAQ) and this
+          # input can't grant what the App's own permission set excludes. A
+          # branch that includes .github/workflows/ (i.e. every branch in
+          # this repo) will always fail to push from this job — confirmed by
+          # the "refusing to allow a GitHub App to create or update workflow"
+          # rejection on issue #28's attempted push. If Claude can't push,
+          # push the branch yourself from the local commit it leaves behind.
           # --allowedTools is a full replacement list, not an addition to the
           # action's defaults: omitting Read/Edit/Write/Glob/Grep here aborts
           # the run the instant Claude tries one (confirmed — an earlier

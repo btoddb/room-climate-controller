@@ -309,9 +309,8 @@ class ProfileUseSwitch(_BaseProfileSwitch):
 
     @callback
     def _apply_to_profile(self, profile: Profile) -> None:
-        preset = profile.presets.get(self._device)
-        if preset is not None:
-            preset.use = bool(self._attr_is_on)
+        preset = profile.ensure_preset(self._device)
+        preset.use = bool(self._attr_is_on)
 
 
 class ProfileFanOverrideSwitch(_BaseProfileSwitch):

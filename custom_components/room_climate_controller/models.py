@@ -336,6 +336,22 @@ class Profile:
             },
         )
 
+    def ensure_preset(self, device: str) -> DevicePreset:
+        """
+        Return this profile's preset for ``device``, creating a default one if missing.
+
+        A profile predates a device added to its room later (e.g. a fan attached
+        to a room after the profile already existed): the device's preset
+        entities are created from the room's *current* device set, but
+        ``presets`` was never backfilled, so edits to those entities were
+        silently dropped instead of being persisted.
+        """
+        preset = self.presets.get(device)
+        if preset is None:
+            preset = DevicePreset()
+            self.presets[device] = preset
+        return preset
+
     def reassigned_to(self, room: Room) -> Profile:
         """Return a copy moved to ``room``, re-seeding presets for its devices."""
         presets = {

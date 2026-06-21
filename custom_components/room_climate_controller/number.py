@@ -239,7 +239,7 @@ class ProfilePresetNumber(ProfileRemovalMixin, RestoreNumber):
         profile = hub.get_profile(self._profile_id)
         if profile is None or self._attr_native_value is None:
             return
-        preset = profile.presets.get(self._device)
-        if preset is not None and preset.temp != self._attr_native_value:
+        preset = profile.ensure_preset(self._device)
+        if preset.temp != self._attr_native_value:
             preset.temp = float(self._attr_native_value)
             self.hass.async_create_task(hub.async_save())

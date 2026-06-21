@@ -228,7 +228,7 @@ class ProfilePresetNumber(ProfileRemovalMixin, RestoreNumber):
                 _PROFILE_LOGGER.info(
                     "[room=%s profile=%s] Profile preset edited: %s target → %s°F",
                     profile.room,
-                    self._profile_id,
+                    profile.name,
                     self._device,
                     int(value),
                 )

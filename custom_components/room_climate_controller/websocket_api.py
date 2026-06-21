@@ -333,7 +333,7 @@ async def ws_create_profile(
     _PROFILE_LOGGER.info(
         "[room=%s profile=%s] Profile created: '%s'",
         room.key,
-        profile.id,
+        profile.name,
         profile.name,
     )
     async_dispatcher_send(hass, SIGNAL_ADD_PROFILE_ENTITIES, profile)
@@ -374,7 +374,7 @@ async def ws_delete_profile(
     _PROFILE_LOGGER.info(
         "[room=%s profile=%s] Profile deleted: '%s'",
         profile.room,
-        pid,
+        profile.name,
         profile.name,
     )
     async_dispatcher_send(hass, SIGNAL_REMOVE_PROFILE, pid)
@@ -420,7 +420,7 @@ async def ws_rename_profile(
     _PROFILE_LOGGER.info(
         "[room=%s profile=%s] Profile renamed: '%s' → '%s'",
         profile.room,
-        pid,
+        name,
         old_name,
         name,
     )

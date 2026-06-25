@@ -21,10 +21,15 @@ import {
   fireMoreInfo,
   formatPowerNow,
   formatSensorValue,
+  getEffectiveTargetLimits,
   getFanMode,
   getHvacMode,
+  getNumberLimits,
   getStateObj,
   getTargetTemp,
+  getTargetTempValue,
+  setInputNumber,
+  type TargetTempDevice,
   windowOpen,
 } from "./helpers";
 import { cardStyles } from "./styles";
@@ -227,9 +232,11 @@ export class RoomClimateControl extends LitElement {
 
     const addDevice = (
       label: string,
+      targetDevice: TargetTempDevice,
       deviceEntity: string | undefined,
       useToggle: string,
       targetHelper: string,
+      highOffsetHelper: string,
       modeFn: (hass: HomeAssistant, id: string) => string,
       fanOnlyOverrideToggle?: string,
       suppressed = false
@@ -242,7 +249,23 @@ export class RoomClimateControl extends LitElement {
 
       const entity = deviceEntity!;
       const targetTemp = getTargetTemp(this.hass, targetHelper);
+      const siblingTarget =
+        targetDevice === "cooling" && entityConfigured(c.heater_entity)
+          ? getTargetTempValue(this.hass, c.target_heating)
+          : targetDevice === "heating" && entityConfigured(c.ac_entity)
+            ? getTargetTempValue(this.hass, c.target_cooling)
+            : undefined;
+      const { min, max } = getEffectiveTargetLimits(
+        targetDevice,
+        getNumberLimits(this.hass, targetHelper),
+        siblingTarget,
+        getTargetTempValue(this.hass, highOffsetHelper)
+      );
       const mode = modeFn(this.hass, entity);
+      const adjustTarget = (delta: number) => {
+        const next = Math.min(max, Math.max(min, targetTemp + delta));
+        if (next !== targetTemp) setInputNumber(this.hass, targetHelper, next);
+      };
       // Trust the backend: it only exposes the fan-only override entity when the
       // room is configured with `has_ac && ac_fan_only`. Don't re-gate on the
       // climate entity advertising `fan_only`, since portable ACs deliver
@@ -274,6 +297,24 @@ export class RoomClimateControl extends LitElement {
             </div>
           </div>
           <div class="device-toggles">
+            <div class="temp-arrows">
+              <button
+                class="rcc-btn temp-arrow-btn"
+                aria-label=${`Raise ${label} target`}
+                .disabled=${targetTemp >= max}
+                @click=${() => adjustTarget(1)}
+              >
+                <ha-icon icon="mdi:menu-up"></ha-icon>
+              </button>
+              <button
+                class="rcc-btn temp-arrow-btn"
+                aria-label=${`Lower ${label} target`}
+                .disabled=${targetTemp <= min}
+                @click=${() => adjustTarget(-1)}
+              >
+                <ha-icon icon="mdi:menu-down"></ha-icon>
+              </button>
+            </div>
             ${showFanOvrCol && fanOvrState
               ? html`
                   <div class="use-toggle">
@@ -307,24 +348,35 @@ export class RoomClimateControl extends LitElement {
 
     addDevice(
       "Cooling",
+      "cooling",
       c.ac_entity,
       c.use_ac,
       c.target_cooling,
+      c.cooling_high_offset,
       getHvacMode,
       c.ac_fan_only_override,
       winOpen
     );
     addDevice(
       "Heating",
+      "heating",
       c.heater_entity,
       c.use_heater,
       c.target_heating,
+      c.heating_high_offset,
       getHvacMode,
       sharedClimateDevice ? undefined : c.heater_fan_only_override,
       winOpen
     );
-    addDevice("Fan", c.fan_entity, c.use_fan, c.target_fan,
-      (hass, id) => getFanMode(hass, id, c.fan_reversible ?? false));
+    addDevice(
+      "Fan",
+      "fan",
+      c.fan_entity,
+      c.use_fan,
+      c.target_fan,
+      c.fan_high_offset,
+      (hass, id) => getFanMode(hass, id, c.fan_reversible ?? false)
+    );
 
     if (rows.length === 0) return nothing;
 
@@ -347,6 +399,7 @@ export class RoomClimateControl extends LitElement {
             <div class="device-label">Manual Mode</div>
           </div>
           <div class="device-toggles">
+            <div class="temp-arrows-spacer" aria-hidden="true"></div>
             <div class="toggle-spacer" aria-hidden="true"></div>
             <div class="use-toggle">
               <span class="use-label">Use</span>

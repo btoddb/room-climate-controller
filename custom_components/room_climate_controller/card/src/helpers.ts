@@ -79,10 +79,67 @@ export function getFanMode(
 }
 
 export function getTargetTemp(hass: HomeAssistant, helperId: string, fallback = 72): number {
+  return getTargetTempValue(hass, helperId) ?? fallback;
+}
+
+export function getTargetTempValue(
+  hass: HomeAssistant,
+  helperId: string
+): number | undefined {
   const state = hass.states[helperId];
-  if (!state) return fallback;
+  if (!state) return undefined;
   const val = parseFloat(state.state);
-  return Number.isNaN(val) ? fallback : Math.round(val);
+  return Number.isNaN(val) ? undefined : Math.round(val);
+}
+
+/** Read a number entity's min/max attributes, with unbounded fallbacks. */
+export function getNumberLimits(
+  hass: HomeAssistant,
+  helperId: string
+): { min: number; max: number } {
+  const attrs = hass.states[helperId]?.attributes ?? {};
+  const min = Number(attrs.min ?? attrs.native_min_value);
+  const max = Number(attrs.max ?? attrs.native_max_value);
+  return {
+    min: Number.isFinite(min) ? min : -Infinity,
+    max: Number.isFinite(max) ? max : Infinity,
+  };
+}
+
+export type TargetTempDevice = "cooling" | "heating" | "fan";
+
+export function getEffectiveTargetLimits(
+  device: TargetTempDevice,
+  limits: { min: number; max: number },
+  siblingTarget?: number,
+  highOffset?: number
+): { min: number; max: number } {
+  const effectiveLimits = { ...limits };
+
+  if (highOffset !== undefined && Number.isFinite(highOffset)) {
+    if (device === "cooling" || device === "fan") {
+      effectiveLimits.max = Math.min(effectiveLimits.max, limits.max - highOffset);
+    } else if (device === "heating") {
+      effectiveLimits.min = Math.max(effectiveLimits.min, limits.min + highOffset);
+    }
+  }
+
+  if (siblingTarget === undefined || !Number.isFinite(siblingTarget)) {
+    return effectiveLimits;
+  }
+  if (device === "cooling") {
+    return {
+      ...effectiveLimits,
+      min: Math.max(effectiveLimits.min, siblingTarget + 1),
+    };
+  }
+  if (device === "heating") {
+    return {
+      ...effectiveLimits,
+      max: Math.min(effectiveLimits.max, siblingTarget - 1),
+    };
+  }
+  return effectiveLimits;
 }
 
 /** Set a number value on `number.*` or legacy `input_number.*` (domain-aware). */

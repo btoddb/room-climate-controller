@@ -7,8 +7,8 @@ __pycache__
 node_modules
 
 # card build output (intermediate; deployed copy lives in www/)
-custom_components/room_climate_controller/card/room-climate-control-card.js
-custom_components/room_climate_controller/card/room-climate-control-card.js.map
+custom_components/btoddb_room_climate_controller/card/room-climate-control-card.js
+custom_components/btoddb_room_climate_controller/card/room-climate-control-card.js.map
 
 # local stuff
 devcontainer-lock.json
@@ -26,4 +26,4 @@ config/*
 
 # don't commit extra custom components used for testing
 custom_components/*
-!custom_components/room_climate_controller
+!custom_components/btoddb_room_climate_controller

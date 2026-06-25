@@ -6,7 +6,7 @@ from typing import Final
 
 from homeassistant.const import Platform
 
-DOMAIN: Final = "room_climate_controller"
+DOMAIN: Final = "btoddb_room_climate_controller"
 
 # --- Child loggers -----------------------------------------------------------
 # Per-category loggers under the integration's base namespace so HA's logger

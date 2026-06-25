@@ -50,7 +50,7 @@ install, then restart Home Assistant.
 
 ### Manual
 
-1. Copy `custom_components/room_climate_controller/` into your HA config's
+1. Copy `custom_components/btoddb_room_climate_controller/` into your HA config's
    `custom_components/` directory.
 2. Restart Home Assistant.
 
@@ -77,22 +77,22 @@ creates — no hand-made `input_select` helper needed).
 
 ## Services
 
-- `room_climate_controller.apply_profile` `{ profile_id }` — apply a profile's presets now.
-- `room_climate_controller.set_manual_mode` `{ room, enabled }` — toggle a room's manual mode.
+- `btoddb_room_climate_controller.apply_profile` `{ profile_id }` — apply a profile's presets now.
+- `btoddb_room_climate_controller.set_manual_mode` `{ room, enabled }` — toggle a room's manual mode.
 
 ## Development
 
 Run the pure-logic tests (no HA required):
 
 ```bash
-python3 custom_components/room_climate_controller/tests/test_engine.py
+python3 custom_components/btoddb_room_climate_controller/tests/test_engine.py
 # or, with pytest:
-pytest custom_components/room_climate_controller/tests/
+pytest custom_components/btoddb_room_climate_controller/tests/
 ```
 
 Rebuild the card after editing its TypeScript source:
 
 ```bash
-cd custom_components/room_climate_controller/card && npm install && npm run build
+cd custom_components/btoddb_room_climate_controller/card && npm install && npm run build
 # deploy.sh additionally bumps the version and copies the bundle into www/
 ```

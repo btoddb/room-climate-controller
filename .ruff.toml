@@ -29,7 +29,7 @@ keep-runtime-typing = true
 max-complexity = 25
 
 [lint.per-file-ignores]
-"custom_components/room_climate_controller/tests/*.py" = [
+"custom_components/btoddb_room_climate_controller/tests/*.py" = [
     "ANN",     # type annotations not required in tests
     "C408",    # dict() literal style
     "D103",    # missing docstrings in test functions
@@ -42,6 +42,6 @@ max-complexity = 25
     "S101",    # assert is the normal test pattern
     "SLF001",  # tests legitimately exercise private members (e.g. controller._on_change)
 ]
-"custom_components/room_climate_controller/engine.py" = [
+"custom_components/btoddb_room_climate_controller/engine.py" = [
     "S101",    # assert used for type-narrowing invariants
 ]

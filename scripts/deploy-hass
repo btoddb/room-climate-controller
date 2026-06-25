@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 REMOTE="${HASS_REMOTE:-root@hass.homelab.lan}"
-REMOTE_PATH="/homeassistant/custom_components/room_climate_controller"
+REMOTE_PATH="/homeassistant/custom_components/btoddb_room_climate_controller"
 
 echo "Deploying to ${REMOTE}:${REMOTE_PATH} ..."
 
@@ -14,7 +14,7 @@ rsync -av --delete \
     --exclude '*.pyc' \
     --exclude 'node_modules' \
     --exclude 'tests' \
-    custom_components/room_climate_controller/ \
+    custom_components/btoddb_room_climate_controller/ \
     "${REMOTE}:${REMOTE_PATH}/"
 
 echo "Done. Restart Home Assistant to apply changes."

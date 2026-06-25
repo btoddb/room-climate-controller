@@ -1,6 +1,6 @@
 # Requirements
 
-This folder is the **functional source of truth** for `room_climate_controller`.
+This folder is the **functional source of truth** for `btoddb_room_climate_controller`.
 It is written for both humans and the AI agent. If the code and a `spec/` file
 disagree, that's a bug in one of them — say so rather than guessing.
 
@@ -37,4 +37,4 @@ Spec files:
 
 - Temperatures are in **°F**. Comparisons truncate to whole degrees (`int()`); displays may show tenths. (`CC` spec, fan/threshold rules.)
 - "Device types" are always **cooling / heating / fan** in that canonical order. A room only has the devices it's configured with — absent devices are ignored everywhere (no card section, no rules, no entities).
-- The control engine ([`engine.py`](../custom_components/room_climate_controller/engine.py)) is a **pure function** with no HA imports, so its rules are unit-tested in plain Python. Behavior rules in `spec/climate-control.md` should map directly onto it.
+- The control engine ([`engine.py`](../custom_components/btoddb_room_climate_controller/engine.py)) is a **pure function** with no HA imports, so its rules are unit-tested in plain Python. Behavior rules in `spec/climate-control.md` should map directly onto it.

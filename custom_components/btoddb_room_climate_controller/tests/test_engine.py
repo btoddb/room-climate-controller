@@ -5,7 +5,7 @@ These modules have no Home Assistant imports, so the test loads them directly
 (via the ``_load`` shim, bypassing the package ``__init__``) and runs under plain
 ``pytest`` — no HA test harness required::
 
-    pytest custom_components/room_climate_controller/tests/
+    pytest custom_components/btoddb_room_climate_controller/tests/
 """
 
 import importlib.util

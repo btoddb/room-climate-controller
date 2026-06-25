@@ -76,7 +76,10 @@ gate) wires this in. This is automatic; you don't need to invoke it yourself.
 ### Implementation (Sonnet)
 - Sonnet should execute the approved plan strictly. The plan is the **most recent substantive plan comment Opus wrote in the thread** — use it as the source of truth. (The `<!-- claude:plan -->` marker now lives in a short control comment the *workflow* posts; that comment is the pipeline's signal, not where the plan content lives, so read the plan itself from Opus's comment above it.)
 - **constraint** The gate already validated a plan exists in a real (non-sandboxed) check before you ran — do not re-verify markers yourself or comment on whether any marker is present/missing in your PR summary. If you were invoked, a valid plan was already found; just build it.
-- **constraint** **NEVER** work on main.  Create a new branch for the changes
+- **constraint** **NEVER** work on main.  Before making any changes, create a
+  fresh, clearly task-named branch from `main` for the current request (for
+  example, `git switch -c feature/<task-slug> main`). Do not reuse or continue
+  on a random existing branch just because it is not `main`.
 - Implement the code and cut a Pull Request (PR) referencing the original issue. Opening the PR is the deliverable — don't finish without it.
 - **constraint** Call `gh pr create` non-interactively, with every flag spelled out — never bare `gh pr create` and never `--fill`. Bare invocations prompt interactively and will hang the run. Use:
   `gh pr create --base main --head <branch> --title "<title>" --body "<body>"`

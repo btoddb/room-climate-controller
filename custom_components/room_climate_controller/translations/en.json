@@ -59,10 +59,7 @@
             "heater_fan_entity": "Heater companion fan",
             "heater_power_switch": "Heater power switch",
             "heater_fan_only_override": "Allow heater fan-only circulation",
-            "fan_entity": "Standalone fan entity",
-            "ac_device_button": "A/C “lights & sound” button (tap_action object, optional)",
-            "heater_device_button": "Heater “lights & sound” button (tap_action object, optional)",
-            "fan_device_button": "Fan “lights & sound” button (tap_action object, optional)"
+            "fan_entity": "Standalone fan entity"
           }
         },
         "sensors": {

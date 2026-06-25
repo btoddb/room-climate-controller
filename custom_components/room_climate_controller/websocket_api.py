@@ -164,13 +164,6 @@ def _serialize_room(
             # disable cooling/heating Use toggles while any is open (UX-26); [] if
             # none configured.
             "window_sensors": list(room.window_sensors),
-            # Optional per-device "lights & sound" tap_action buttons; the card
-            # renders these in each device's settings dialog.
-            "ac_device_button": room.ac_device_button if room.has_ac else None,
-            "heater_device_button": (
-                room.heater_device_button if room.has_heater else None
-            ),
-            "fan_device_button": room.fan_device_button if room.has_fan else None,
             "live": live,
         },
     }

@@ -15,7 +15,7 @@ hand-edit the generated `www/` bundle.
 - **UX-4** Temperatures display with tenths; comparisons are whole-degree (CC-5). Show units.
 - **UX-5** A fan that's **off** shows status "Off", not a 0%/speed percentage.
 - **UX-29** While a fan that reports a direction is **running**, the Fan section's mode text appends the direction in parentheses — e.g. `50% (Reverse)` or `50% (Forward)`. "Off" stays plain (UX-5); fans without a direction attribute render unchanged.
-- **UX-6** **No layout shift on button press.** After a press, indicate success by changing the button's *appearance* (not its size) and don't inject text that reflows the dialog. Light/sound buttons briefly deactivate (~1 s) on press, then reactivate.
+- **UX-6** **No layout shift on button press.** After a press, indicate success by changing the button's *appearance* (not its size) and don't inject text that reflows the dialog.
 - **UX-27** **Zero-setup, cache-proof card registration.** The integration serves the card bundle itself and registers it as a **Lovelace resource** whose URL carries a content-hash `?v=` param (when resources are YAML-managed it falls back to an extra frontend module). It must never rely on URLs baked into `index.html`: the frontend's service worker caches dashboard pages, so a page cached during HA startup would permanently miss the card ("custom element doesn't exist"). A bundle change must change the resource URL so stale HTTP/service-worker caches are bypassed.
 
 ## Main card
@@ -35,8 +35,6 @@ hand-edit the generated `www/` bundle.
 
 - **UX-12** Shows room temp + humidity, and per device a section with **target temp**, **medium offset**, and **high offset** (target as an input field; offsets as sliders).
 - **UX-28** The Fan section includes a **Reverse** toggle **only when the room's fan is reversible** (CC-22 auto-detection, surfaced as `fan_reversible` in `rooms/list`). It behaves like every other toggle (standard entity toggle, immediate service call).
-- **UX-13** For any device with a configured **lights & sound** command, a button that blindly sends it (per-device `*_device_button` tap_action). On press, follow UX-6 (deactivate ~1 s, then reactivate).
-
 ## Energy dialog
 
 - **UX-14** A graph of the room's energy use (watts).

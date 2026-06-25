@@ -86,10 +86,5 @@ export function resolveRoomConfig(
     // outdoor mirror and the graph time-range select) before any hard default.
     outdoor_sensor: user.outdoor_sensor ?? e.outdoor ?? DEFAULT_OUTDOOR_SENSOR,
     time_range: user.time_range ?? e.time_range ?? DEFAULT_TIME_RANGE,
-    // Owned by the integration (per-room device config); fall back to any
-    // legacy button still set in the card's own YAML.
-    ac_device_button: e.ac_device_button ?? user.ac_device_button,
-    heater_device_button: e.heater_device_button ?? user.heater_device_button,
-    fan_device_button: e.fan_device_button ?? user.fan_device_button,
   });
 }

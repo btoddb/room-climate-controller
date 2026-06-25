@@ -6,7 +6,7 @@ import {
   getStateObj,
   setInputNumber,
 } from "./helpers";
-import type { DeviceSettingsButton, RoomClimateControlConfig } from "./types";
+import type { RoomClimateControlConfig } from "./types";
 
 export interface DeviceSettingsFields {
   title: string;
@@ -15,7 +15,6 @@ export interface DeviceSettingsFields {
   highOffset: string;
   /** When true, computed thresholds subtract offsets from target (heating). */
   subtractOffsets?: boolean;
-  deviceButton?: DeviceSettingsButton;
   /** Fan reverse switch entity; set only when the fan is reversible (UX-28). */
   reverseToggle?: string;
 }
@@ -48,7 +47,6 @@ export function buildDeviceSettingsFields(
       target: config.target_cooling,
       mediumOffset: config.cooling_medium_offset,
       highOffset: config.cooling_high_offset,
-      deviceButton: config.ac_device_button,
     });
   }
 
@@ -59,7 +57,6 @@ export function buildDeviceSettingsFields(
       mediumOffset: config.heating_medium_offset,
       highOffset: config.heating_high_offset,
       subtractOffsets: true,
-      deviceButton: config.heater_device_button,
     });
   }
 
@@ -69,7 +66,6 @@ export function buildDeviceSettingsFields(
       target: config.target_fan,
       mediumOffset: config.fan_medium_offset,
       highOffset: config.fan_high_offset,
-      deviceButton: config.fan_device_button,
       reverseToggle: config.fan_reversible ? config.fan_reverse_toggle : undefined,
     });
   }
@@ -171,8 +167,7 @@ function renderReverseRow(
 
 export function renderDeviceSettingsSection(
   hass: HomeAssistant,
-  fields: DeviceSettingsFields,
-  onDeviceButton?: (button: DeviceSettingsButton, btn: HTMLButtonElement) => void
+  fields: DeviceSettingsFields
 ): TemplateResult {
   const subtract = Boolean(fields.subtractOffsets);
   const medComputed = computedThreshold(
@@ -195,20 +190,6 @@ export function renderDeviceSettingsSection(
       ${renderOffsetSlider(hass, fields.mediumOffset, "Medium offset", medComputed)}
       ${renderOffsetSlider(hass, fields.highOffset, "High offset", highComputed)}
       ${renderReverseRow(hass, fields.reverseToggle)}
-      ${fields.deviceButton && onDeviceButton
-        ? html`
-            <div class="settings-device-button">
-              <button
-                type="button"
-                class="rcc-btn"
-                @click=${(ev: Event) =>
-                  onDeviceButton(fields.deviceButton!, ev.target as HTMLButtonElement)}
-              >
-                ${fields.deviceButton.name ?? "Lights & Sound"}
-              </button>
-            </div>
-          `
-        : nothing}
     </div>
   `;
 }

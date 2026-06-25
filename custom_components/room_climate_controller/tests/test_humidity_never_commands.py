@@ -49,9 +49,6 @@ def _room(**overrides):
         },
         "command_delay": 1.0,
         "power_on_delay": 2.0,
-        "ac_device_button": None,
-        "heater_device_button": None,
-        "fan_device_button": None,
     }
     defaults.update(overrides)
     return models.Room(**defaults)

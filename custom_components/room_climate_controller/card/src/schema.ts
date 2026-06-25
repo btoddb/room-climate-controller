@@ -2,27 +2,16 @@
 
 The card discovers every device/helper entity from the integration for the
 chosen room, so the editor only needs a room picker and the two presentation
-helpers the integration doesn't own (outdoor sensor + graph time-range). The
-per-device "lights & sound" buttons are owned by the integration (configured in
-the room's setup) and discovered via `rooms/list`, so they are not edited here. */
+helpers the integration doesn't own (outdoor sensor + graph time-range). */
 import type { ClimateRoomMeta } from "./profiles/store";
 
 export const FORM_LABELS: Record<string, string> = {
   room: "Room",
   outdoor_sensor: "Outdoor temperature sensor",
   time_range: "Graph time-range helper",
-  ac_device_button: "A/C lights & sound button (tap_action)",
-  heater_device_button: "Heater lights & sound button (tap_action)",
-  fan_device_button: "Fan lights & sound button (tap_action)",
 };
 
-export type FormFieldName =
-  | "room"
-  | "outdoor_sensor"
-  | "time_range"
-  | "ac_device_button"
-  | "heater_device_button"
-  | "fan_device_button";
+export type FormFieldName = "room" | "outdoor_sensor" | "time_range";
 
 /** Keys the editor should clear from the config when left empty. */
 export const OPTIONAL_FIELDS: FormFieldName[] = ["outdoor_sensor", "time_range"];

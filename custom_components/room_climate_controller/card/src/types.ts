@@ -1,11 +1,5 @@
 import type { HomeAssistant, LovelaceCardConfig } from "./ha-types";
 
-/** Optional settings-dialog button (e.g. toggle A/C display lights/sound). */
-export interface DeviceSettingsButton {
-  name?: string;
-  tap_action: Record<string, unknown>;
-}
-
 /** What the user actually writes in the dashboard YAML / visual editor.
 
 The card resolves every device/helper entity from the integration's
@@ -17,12 +11,6 @@ export interface RoomClimateUserConfig extends LovelaceCardConfig {
   room?: string;
   outdoor_sensor?: string;
   time_range?: string;
-  /** Legacy/back-compat: the device "lights & sound" buttons are now owned by
-  the integration (per-room config) and discovered via `rooms/list`. These are
-  only read as a fallback for cards configured before the move. */
-  ac_device_button?: DeviceSettingsButton;
-  heater_device_button?: DeviceSettingsButton;
-  fan_device_button?: DeviceSettingsButton;
   /** Advanced/legacy: explicit room key if `room` is absent. */
   profile_room_key?: string;
 }
@@ -51,9 +39,6 @@ export interface RoomClimateControlConfig extends LovelaceCardConfig {
   /** True when the standalone fan supports direction; gates the Reverse toggle (UX-28). */
   fan_reversible?: boolean;
   fan_reverse_toggle?: string;
-  ac_device_button?: DeviceSettingsButton;
-  heater_device_button?: DeviceSettingsButton;
-  fan_device_button?: DeviceSettingsButton;
   manual_mode: string;
   target_cooling: string;
   cooling_medium_offset: string;

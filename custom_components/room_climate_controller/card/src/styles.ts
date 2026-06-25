@@ -68,6 +68,28 @@ export const cardStyles = css`
     width: 48px;
   }
 
+  .temp-arrows {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  .temp-arrows-spacer {
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  .temp-arrow-btn {
+    width: 32px;
+    height: 20px;
+    padding: 0;
+    --mdc-icon-size: 18px;
+  }
+
   .device-info {
     flex: 1;
     min-width: 0;

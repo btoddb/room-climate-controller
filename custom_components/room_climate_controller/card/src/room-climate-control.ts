@@ -15,7 +15,6 @@ import { GraphOverlay } from "./graph-overlay";
 import {
   createLovelaceCard,
   createPlotlyGraphCard,
-  executeTapAction,
   entityAvailable,
   entityConfigured,
   fireMoreInfo,
@@ -43,7 +42,6 @@ import {
 } from "./resolve-room";
 import {
   DEFAULT_TIME_RANGE,
-  type DeviceSettingsButton,
   type RoomClimateControlConfig,
   type RoomClimateUserConfig,
 } from "./types";
@@ -426,26 +424,11 @@ export class RoomClimateControl extends LitElement {
         <div class="dialog-body">
           ${renderRoomSettingsSection(this.hass, this._config)}
           ${deviceSections.map((fields) =>
-            renderDeviceSettingsSection(this.hass, fields, (button, btn) =>
-              this._onSettingsDeviceButton(button, btn)
-            )
+            renderDeviceSettingsSection(this.hass, fields)
           )}
         </div>
       </ha-dialog>
     `;
-  }
-
-  private _onSettingsDeviceButton(
-    button: DeviceSettingsButton,
-    btn: HTMLButtonElement
-  ): void {
-    if (btn.disabled) return;
-    btn.disabled = true;
-    void executeTapAction(this.hass, button.tap_action).finally(() => {
-      window.setTimeout(() => {
-        btn.disabled = false;
-      }, 1000);
-    });
   }
 
   private _openSettings(): void {

@@ -99,13 +99,6 @@ DEFAULT_GRAPH_TIME_RANGE: Final = "24"
 CONF_AC_FAN_ONLY: Final = "ac_fan_only_override"
 CONF_HEATER_FAN_ONLY: Final = "heater_fan_only_override"
 
-# Optional per-device "lights & sound" button: a free-form Lovelace tap_action
-# object (e.g. remote.send_command) the card renders in each device's settings
-# dialog. Stored here so the command is owned by the room, not hand-wired per card.
-CONF_AC_DEVICE_BUTTON: Final = "ac_device_button"
-CONF_HEATER_DEVICE_BUTTON: Final = "heater_device_button"
-CONF_FAN_DEVICE_BUTTON: Final = "fan_device_button"
-
 # Per-device preset limits {min,max}
 CONF_LIMITS: Final = "limits"
 

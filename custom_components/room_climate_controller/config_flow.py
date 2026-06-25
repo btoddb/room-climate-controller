@@ -18,20 +18,17 @@ from homeassistant.util import slugify
 
 from .const import (
     CONF_AC_CLIMATE,
-    CONF_AC_DEVICE_BUTTON,
     CONF_AC_FAN_ENTITY,
     CONF_AC_FAN_ONLY,
     CONF_AC_POWER_SWITCH,
     CONF_AREA_ID,
     CONF_COMBINED,
     CONF_COMMAND_DELAY,
-    CONF_FAN_DEVICE_BUTTON,
     CONF_FAN_ENTITY,
     CONF_HAS_AC,
     CONF_HAS_FAN,
     CONF_HAS_HEATER,
     CONF_HEATER_CLIMATE,
-    CONF_HEATER_DEVICE_BUTTON,
     CONF_HEATER_FAN_ENTITY,
     CONF_HEATER_FAN_ONLY,
     CONF_HEATER_POWER_SWITCH,
@@ -115,8 +112,6 @@ _CLIMATE = _entity("climate")
 _FAN = _entity("fan")
 _SWITCH = _entity("switch")
 _BOOL = selector.BooleanSelector()
-# Free-form YAML object editor for a device's "lights & sound" tap_action.
-_OBJECT = selector.ObjectSelector()
 
 
 def _temp_number() -> Any:
@@ -407,7 +402,6 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
                 (vol.Optional(CONF_AC_FAN_ENTITY), _FAN),
                 (vol.Optional(CONF_AC_POWER_SWITCH), _SWITCH),
                 (vol.Required(CONF_AC_FAN_ONLY, default=False), _BOOL),
-                (vol.Optional(CONF_AC_DEVICE_BUTTON), _OBJECT),
             ]
         if self._data.get(CONF_HAS_HEATER) and not self._data.get(CONF_COMBINED):
             fields += [
@@ -415,12 +409,10 @@ class RoomSubentryFlowHandler(ConfigSubentryFlow):
                 (vol.Optional(CONF_HEATER_FAN_ENTITY), _FAN),
                 (vol.Optional(CONF_HEATER_POWER_SWITCH), _SWITCH),
                 (vol.Required(CONF_HEATER_FAN_ONLY, default=False), _BOOL),
-                (vol.Optional(CONF_HEATER_DEVICE_BUTTON), _OBJECT),
             ]
         if self._data.get(CONF_HAS_FAN):
             fields += [
                 (vol.Optional(CONF_FAN_ENTITY), _FAN),
-                (vol.Optional(CONF_FAN_DEVICE_BUTTON), _OBJECT),
             ]
         return fields
 

@@ -1,6 +1,5 @@
 /** Typed websocket client for the room_climate integration. */
 import type { HomeAssistant } from "../ha-types";
-import type { DeviceSettingsButton } from "../types";
 
 export interface WsPresetDevice {
   use: boolean;
@@ -60,9 +59,6 @@ export interface WsRoom {
     heater_entity: string | null;
     fan_entity: string | null;
     window_sensors: string[];
-    ac_device_button: DeviceSettingsButton | null;
-    heater_device_button: DeviceSettingsButton | null;
-    fan_device_button: DeviceSettingsButton | null;
     live: Record<string, WsRoomLive>;
   };
 }

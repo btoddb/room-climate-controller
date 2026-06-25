@@ -282,26 +282,3 @@ export function getStateObj(
 ): EntityState | undefined {
   return hass.states[entityId];
 }
-
-/** Run a Lovelace tap_action (perform-action / legacy call-service). */
-export async function executeTapAction(
-  hass: HomeAssistant,
-  action: Record<string, unknown>
-): Promise<void> {
-  const actionType = action.action as string | undefined;
-  if (actionType !== "perform-action" && actionType !== "call-service") {
-    return;
-  }
-
-  const service = (action.perform_action ?? action.service) as string | undefined;
-  if (!service?.includes(".")) return;
-
-  const [domain, serviceName] = service.split(".", 2);
-  const data = { ...((action.data as Record<string, unknown>) ?? {}) };
-  const target = action.target as Record<string, unknown> | undefined;
-  if (target?.entity_id !== undefined) {
-    data.entity_id = target.entity_id;
-  }
-
-  await hass.callService(domain, serviceName, data);
-}

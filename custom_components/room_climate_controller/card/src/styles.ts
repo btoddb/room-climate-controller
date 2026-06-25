@@ -304,17 +304,6 @@ export const cardStyles = css`
     accent-color: var(--primary-color, #03a9f4);
   }
 
-  .settings-device-button {
-    padding: 8px 16px 12px;
-    border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-    box-sizing: border-box;
-  }
-
-  .settings-device-button .rcc-btn {
-    box-sizing: border-box;
-    max-width: 100%;
-  }
-
   .dialog-graph-host {
     min-height: 400px;
   }

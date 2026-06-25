@@ -26,13 +26,6 @@
 # Optional per-card presentation overrides (all have sensible defaults):
 #   outdoor_sensor: sensor.<hub>_outdoor_temperature   # auto-filled by the integration
 #   time_range: input_select.time_range
-#   ac_device_button / heater_device_button / fan_device_button:  # lights & sound
-#     name: Lights & Sound
-#     tap_action:
-#       action: perform-action
-#       perform_action: remote.send_command
-#       target: { entity_id: remote.todd_s_bedroom_remote }
-#       data: { num_repeats: 1, delay_secs: 0.4, hold_secs: 0, device: "Todd's A/C", command: lights }
 
 title: Climate
 views:

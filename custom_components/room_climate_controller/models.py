@@ -16,20 +16,17 @@ if TYPE_CHECKING:
 
 from .const import (
     CONF_AC_CLIMATE,
-    CONF_AC_DEVICE_BUTTON,
     CONF_AC_FAN_ENTITY,
     CONF_AC_FAN_ONLY,
     CONF_AC_POWER_SWITCH,
     CONF_AREA_ID,
     CONF_COMBINED,
     CONF_COMMAND_DELAY,
-    CONF_FAN_DEVICE_BUTTON,
     CONF_FAN_ENTITY,
     CONF_HAS_AC,
     CONF_HAS_FAN,
     CONF_HAS_HEATER,
     CONF_HEATER_CLIMATE,
-    CONF_HEATER_DEVICE_BUTTON,
     CONF_HEATER_FAN_ENTITY,
     CONF_HEATER_FAN_ONLY,
     CONF_HEATER_POWER_SWITCH,
@@ -146,11 +143,6 @@ class Room:
     limits: dict[str, dict[str, float]]
     command_delay: float
     power_on_delay: float
-    # Free-form Lovelace tap_action objects ({name?, tap_action}) the card renders
-    # as each device's "lights & sound" button; None when not configured.
-    ac_device_button: dict[str, Any] | None
-    heater_device_button: dict[str, Any] | None
-    fan_device_button: dict[str, Any] | None
 
     @classmethod
     def from_subentry(cls, subentry_id: str, data: Mapping[str, Any]) -> Room:
@@ -195,9 +187,6 @@ class Room:
             limits=limits,
             command_delay=float(data.get(CONF_COMMAND_DELAY, DEFAULT_COMMAND_DELAY)),
             power_on_delay=float(data.get(CONF_POWER_ON_DELAY, DEFAULT_POWER_ON_DELAY)),
-            ac_device_button=data.get(CONF_AC_DEVICE_BUTTON) or None,
-            heater_device_button=data.get(CONF_HEATER_DEVICE_BUTTON) or None,
-            fan_device_button=data.get(CONF_FAN_DEVICE_BUTTON) or None,
         )
 
     def supports(self, device: str) -> bool:

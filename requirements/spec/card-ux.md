@@ -25,8 +25,10 @@ hand-edit the generated `www/` bundle.
 - **UX-9** One section per device type the room has (Cooling / Heating / Fan), each showing:
   - **Name** — clicking opens the underlying device's more-info dialog.
   - **Target temp** (view only) and **Mode** (view only).
+  - **Target temp arrows** — stacked triangle buttons immediately left of the Fan Ovr / Use toggle columns. Up raises that device's target by 1°F; down lowers it by 1°F. Buttons clamp to the device number entity's min/max range, disable at the corresponding bound without layout shift, write the target number only, and leave Use / Fan Ovr toggles unchanged. The card reflects the target value Home Assistant reports after any server-side cross-device target constraint is applied.
   - **Fan Ovr** toggle (label "Fan Ovr") — only for fan-capable heating/cooling devices; placed left of the Use toggle; editable (CC-12).
   - **Use** toggle (editable).
+- **UX-30** Device-section target temp arrows align vertically across all device rows. Rows without a target, such as Manual Mode, reserve matching horizontal space so their toggles stay aligned with device rows.
 - **UX-10** A **Manual Mode** row aligned so its toggle lines up vertically with the Use toggles. Since manual mode has no device, it's labeled "Manual Mode" on the left.
 - **UX-26** When any of the room's **window sensors** reads open (CC-20), the **Cooling** and **Heating** Use toggles are visibly disabled (dimmed, non-interactive) — their displayed state is preserved, not cleared. A status banner between the temperature/humidity row and the Cooling row always shows the window state when at least one sensor is configured: **"A window is open"** (warning color) while any window is open, **"Windows are closed"** (secondary color) when all are closed. The settings-dialog target/offset inputs, the Fan section, Fan Ovr toggles, Manual Mode, and all Profiles actions stay interactive while a window is open.
 - **UX-11** Below the device sections: **Settings**, **Energy**, and **History** buttons.

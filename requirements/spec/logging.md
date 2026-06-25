@@ -1,7 +1,7 @@
 # Spec: Logging
 
 All log messages use the Python logger hierarchy
-(`custom_components.room_climate_controller.*`).  Filter by that namespace in HA's
+(`custom_components.btoddb_room_climate_controller.*`).  Filter by that namespace in HA's
 **Settings → System → Logs** to see only RCC messages.  Each message embeds
 `[room=<key>]` and/or `[profile=<name>]` tags so you can narrow results with
 free-text search.
@@ -15,22 +15,22 @@ a message tag):
 
 | Child logger | Covers |
 |---|---|
-| `custom_components.room_climate_controller.sensor` | CC-L1 temperature, CC-L2 humidity, CC-L6 window changes |
-| `custom_components.room_climate_controller.settings` | CC-L4 toggles, CC-L5 room add/change/remove, CC-L8 target/offset edits |
-| `custom_components.room_climate_controller.profile` | CC-L3a–j profile events |
-| `custom_components.room_climate_controller.capabilities` | CC-L10 capability dumps |
+| `custom_components.btoddb_room_climate_controller.sensor` | CC-L1 temperature, CC-L2 humidity, CC-L6 window changes |
+| `custom_components.btoddb_room_climate_controller.settings` | CC-L4 toggles, CC-L5 room add/change/remove, CC-L8 target/offset edits |
+| `custom_components.btoddb_room_climate_controller.profile` | CC-L3a–j profile events |
+| `custom_components.btoddb_room_climate_controller.capabilities` | CC-L10 capability dumps |
 
 The `RCC commanded` line (CC-L7) and the diagnostic exception logs stay on the
-base `custom_components.room_climate_controller.controller` logger — it's the
+base `custom_components.btoddb_room_climate_controller.controller` logger — it's the
 device-action line, not a settings/sensor/profile event. Example: to see only
-sensor activity, set `custom_components.room_climate_controller.sensor: info`
+sensor activity, set `custom_components.btoddb_room_climate_controller.sensor: info`
 in the HA logger config (and `warning`/`error` to silence the others).
 
 Runtime events (temperature/humidity/window changes, profile actions, toggle
 changes, room lifecycle) are emitted at **INFO** level.  Diagnostic detail —
 per-step config-flow progress, entity lists registered per platform — is
 emitted at **DEBUG** level and requires
-`custom_components.room_climate_controller: debug` in the HA logger config to
+`custom_components.btoddb_room_climate_controller: debug` in the HA logger config to
 appear.
 
 ## Log events
@@ -39,13 +39,13 @@ appear.
 
 - **CC-L1** When the controller detects a room's temperature sensor change:
   `[room=<key>] Temperature changed: <old> → <new>°F`
-  Logged on the `…room_climate_controller.sensor` logger. No predicted command
+  Logged on the `…btoddb_room_climate_controller.sensor` logger. No predicted command
   list is appended — if the change actually commands a device, that shows up
   as its own `RCC commanded` line (CC-L7), tagged with the triggering reason,
   so the log never reports a command that wasn't actually sent.
 - **CC-L2** When the controller detects a room's humidity sensor change:
   `[room=<key>] Humidity changed: <old> → <new>%%`
-  Also logged on the `…room_climate_controller.sensor` logger. The engine
+  Also logged on the `…btoddb_room_climate_controller.sensor` logger. The engine
   ignores humidity, and the controller enforces this structurally: a humidity
   change returns immediately after logging — it never resubscribes or
   requests an evaluation, so a humidity-only change **cannot** command a
@@ -57,7 +57,7 @@ effect on control decisions.
 
 ### Profile events (CC-L3)
 
-Logged on the `…room_climate_controller.profile` logger, tagged
+Logged on the `…btoddb_room_climate_controller.profile` logger, tagged
 `[room=<key> profile=<name>]` (the profile's display name, not its id — more
 useful for free-text filtering).
 
@@ -90,7 +90,7 @@ useful for free-text filtering).
 - **CC-L4** When a room's use toggle or manual-mode switch changes:
   `[room=<key>] Toggle '<display name>' → on|off`
 
-Logged on the `…room_climate_controller.settings` logger.
+Logged on the `…btoddb_room_climate_controller.settings` logger.
 
 Covers: **Use A/C**, **Use heater**, **Use fan**, **Manual mode**,
 **A/C fan-only override**, **Heater fan-only override**.
@@ -102,7 +102,7 @@ resulting action correlate without duplicating/predicting the command.
 
 ### Room lifecycle (CC-L5)
 
-Logged on the `…room_climate_controller.settings` logger.
+Logged on the `…btoddb_room_climate_controller.settings` logger.
 
 - **CC-L5a** When a room is first added (integration startup or after config change):
   `[room=<key>] Room created: '<label>': <settings>`
@@ -122,7 +122,7 @@ just the label; there is no settings snapshot left to show.
 - **CC-L6** When a window sensor transitions to open or closed:
   `[room=<key>] Window <entity_id> opened|closed`
 
-Logged by `controller.py` in `_on_change`, on the `…room_climate_controller.sensor`
+Logged by `controller.py` in `_on_change`, on the `…btoddb_room_climate_controller.sensor`
 logger. Only fires when the state value actually changes (`old_state !=
 new_state`). Unavailable/unknown states are not treated as open (CC-21), so no
 log is emitted for those transitions.
@@ -164,7 +164,7 @@ thresholds?").
   e.g. `[room=office] Cooling target → 72°F`.
 
 Logged by `number.py` in `RoomNumber.async_set_native_value`, at **INFO** on
-the `…room_climate_controller.settings` logger, only when the value actually
+the `…btoddb_room_climate_controller.settings` logger, only when the value actually
 changed (mirrors the existing `ProfilePresetNumber` pattern).
 
 ### Device/fan capability dumps (CC-L10)
@@ -173,7 +173,7 @@ changed (mirrors the existing `ProfilePresetNumber` pattern).
   `[room=<key>] A/C capabilities: <entity_id>: hvac_modes=[...], fan_only=yes|no, fan_modes=[...], min_temp=<N>, max_temp=<N>`
   `[room=<key>] Fan capabilities: <entity_id>: preset_modes=[...], reversible=yes|no, percentage_step=<N>`
 
-Emitted at **INFO** on the `…room_climate_controller.capabilities` logger:
+Emitted at **INFO** on the `…btoddb_room_climate_controller.capabilities` logger:
 - by `controller.py` (`RoomController._log_capabilities`) shortly after the
   controller starts and again after the delayed resubscribe, once entities have
   registered;

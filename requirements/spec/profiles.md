@@ -7,13 +7,13 @@ Profiles are integration **storage records** — not HA automations.
 
 ## Data model
 
-A profile ([`models.py`](../../custom_components/room_climate_controller/models.py)
+A profile ([`models.py`](../../custom_components/btoddb_room_climate_controller/models.py)
 `Profile`) belongs to a room and holds:
 
 - **PR-1** `id` (canonical 2-digit, e.g. `08`), `name` (display), `room` (room key), `enabled`, `time` (`HH:MM`, 24h), `fan_override` (bool), `fan_reverse` (bool), and a per-device `presets` map.
 - **PR-2** Each device preset (`DevicePreset`) has a **use** toggle and a **target temp**. New profiles default presets to *use off, temp = the device's min limit*.
 - **PR-3** A profile only carries presets for the device types its room has. Moving a profile to another room re-seeds presets for that room's devices.
-- Profiles are persisted in `.storage` ([`store.py`](../../custom_components/room_climate_controller/store.py)) and exposed as entities (`switch.*` enabled, `time.*`, `number.*` presets) so they're editable outside the card too.
+- Profiles are persisted in `.storage` ([`store.py`](../../custom_components/btoddb_room_climate_controller/store.py)) and exposed as entities (`switch.*` enabled, `time.*`, `number.*` presets) so they're editable outside the card too.
 
 ## What applying a profile does
 
@@ -23,7 +23,7 @@ A profile ([`models.py`](../../custom_components/room_climate_controller/models.
 
 ## Scheduling
 
-[`scheduler.py`](../../custom_components/room_climate_controller/scheduler.py)
+[`scheduler.py`](../../custom_components/btoddb_room_climate_controller/scheduler.py)
 registers a time trigger per enabled profile and re-registers when a profile's
 time or enabled flag changes.
 

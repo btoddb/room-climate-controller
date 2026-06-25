@@ -14,9 +14,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.room_climate_controller import models
-from custom_components.room_climate_controller.const import LOGGER_SENSOR
-from custom_components.room_climate_controller.controller import RoomController
+from custom_components.btoddb_room_climate_controller import models
+from custom_components.btoddb_room_climate_controller.const import LOGGER_SENSOR
+from custom_components.btoddb_room_climate_controller.controller import RoomController
 
 
 def _room(**overrides):

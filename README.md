@@ -11,7 +11,7 @@ it ships and auto-registers.
 - Native entities, HA areas, abstraction sensors (room temp/humidity/power + a
   hub-level Outdoor Temperature), and plotly energy/history graphs.
 
-See [custom_components/room_climate_controller/README.md](custom_components/room_climate_controller/README.md)
+See [custom_components/btoddb_room_climate_controller/README.md](custom_components/btoddb_room_climate_controller/README.md)
 for full details, and [requirements/](requirements/) for the design requirements.
 
 ## Install
@@ -19,11 +19,11 @@ for full details, and [requirements/](requirements/) for the design requirements
 - **HACS:** add this repo as a custom repository (category: Integration), install,
   restart HA, then **Settings → Devices & Services → Add Integration → "Room
   Climate Controller"** and **Add room** per room.
-- **Manual:** copy `custom_components/room_climate_controller/` into your HA
+- **Manual:** copy `custom_components/btoddb_room_climate_controller/` into your HA
   `config/custom_components/`, restart, then add the integration as above.
 
 A ready sample dashboard is in
-[`custom_components/room_climate_controller/examples/dashboard.yaml`](custom_components/room_climate_controller/examples/dashboard.yaml).
+[`custom_components/btoddb_room_climate_controller/examples/dashboard.yaml`](custom_components/btoddb_room_climate_controller/examples/dashboard.yaml).
 
 ## Development
 
@@ -31,9 +31,9 @@ This repo uses the standard HA integration dev scaffold (devcontainer + `config/
 
 - `scripts/develop` — run Home Assistant locally against `config/`.
 - `scripts/lint` — run ruff.
-- `python3 custom_components/room_climate_controller/tests/test_engine.py` — engine
+- `python3 custom_components/btoddb_room_climate_controller/tests/test_engine.py` — engine
   unit tests (no HA required).
-- `cd custom_components/room_climate_controller/card && npm install && npm run build`
+- `cd custom_components/btoddb_room_climate_controller/card && npm install && npm run build`
   — rebuild the Lovelace card (edit `card/src/*.ts`, not the generated `www/` bundle).
 
 See [CLAUDE.md](CLAUDE.md) for an architecture overview and [CONTRIBUTING.md](CONTRIBUTING.md).

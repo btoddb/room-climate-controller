@@ -4,7 +4,7 @@ The integration ships a companion Lit/TypeScript card (`custom:room-climate-cont
 and **auto-registers** it (UX-27). The card discovers a room's
 sensors, devices, and control entities from the integration; the user only picks
 a room in the visual editor. Source lives in
-[`card/src/`](../../custom_components/room_climate_controller/card/src/) — never
+[`card/src/`](../../custom_components/btoddb_room_climate_controller/card/src/) — never
 hand-edit the generated `www/` bundle.
 
 ## General UX rules
@@ -66,4 +66,4 @@ on click. See `profiles.md` for behavior.
 
 ## Sample dashboard
 
-- A ready sample lives in [`examples/dashboard.yaml`](../../custom_components/room_climate_controller/examples/dashboard.yaml).
+- A ready sample lives in [`examples/dashboard.yaml`](../../custom_components/btoddb_room_climate_controller/examples/dashboard.yaml).

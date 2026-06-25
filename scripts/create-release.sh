@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-MANIFEST="$REPO_ROOT/custom_components/room_climate_controller/manifest.json"
+MANIFEST="$REPO_ROOT/custom_components/btoddb_room_climate_controller/manifest.json"
 
 VERSION_TAG="${1:-}"
 if [[ -z "$VERSION_TAG" ]]; then

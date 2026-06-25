@@ -3,8 +3,8 @@
 The integration maintains each room's target temperature (and drives fan speed)
 by reactively controlling that room's real `climate` / `fan` / `switch` devices.
 The decision logic is a **pure function**,
-[`compute_commands(inputs)`](../../custom_components/room_climate_controller/engine.py);
-[`controller.py`](../../custom_components/room_climate_controller/controller.py)
+[`compute_commands(inputs)`](../../custom_components/btoddb_room_climate_controller/engine.py);
+[`controller.py`](../../custom_components/btoddb_room_climate_controller/controller.py)
 gathers live state, calls it, and executes the returned commands. Manual-mode
 gating is the controller's job — the engine assumes control is active.
 
@@ -49,7 +49,7 @@ reads and the card/profiles write:
 
 Speed is a 3-tier function of how far the room is past the target:
 
-- **CC-6** Fan-speed tiers are **Low / Medium / High**, mapped to `10% / 50% / 100%` for percentage-controlled fans. For devices with named `fan_modes`, the tier label is matched onto the device's modes (preference list + substring fallback in [`fan_logic.py`](../../custom_components/room_climate_controller/fan_logic.py)). A device with a discrete speed grid (`percentage_step`) snaps the commanded percentage up to its nearest step; the engine compares by grid index rather than raw percentage so it doesn't re-issue the same command every evaluation.
+- **CC-6** Fan-speed tiers are **Low / Medium / High**, mapped to `10% / 50% / 100%` for percentage-controlled fans. For devices with named `fan_modes`, the tier label is matched onto the device's modes (preference list + substring fallback in [`fan_logic.py`](../../custom_components/btoddb_room_climate_controller/fan_logic.py)). A device with a discrete speed grid (`percentage_step`) snaps the commanded percentage up to its nearest step; the engine compares by grid index rather than raw percentage so it doesn't re-issue the same command every evaluation.
 - **CC-7** Thresholds derive from the target plus the offsets:
   - **Cooling / fan** (hotter ⇒ faster): `medium = target + medium_offset`, `high = target + high_offset`, with `target < medium < high`. Room `≥ high` ⇒ High; `≥ medium` ⇒ Medium; else Low.
   - **Heating** (colder ⇒ faster): `medium = target − medium_offset`, `high = target − high_offset`, with `high < medium < target`. Room `≤ high` ⇒ High; `≤ medium` ⇒ Medium; else Low.
@@ -115,7 +115,7 @@ A room may configure zero or more optional **window** `binary_sensor`s
 
 ## Constraints (advisory clamping)
 
-[`constraints.py`](../../custom_components/room_climate_controller/constraints.py)
+[`constraints.py`](../../custom_components/btoddb_room_climate_controller/constraints.py)
 watches a room's target/offset numbers; on an invalid combination it **clamps**
 the offending value and raises a **persistent notification** (HA notifications
 tab) — non-blocking, no deprecated notify methods.

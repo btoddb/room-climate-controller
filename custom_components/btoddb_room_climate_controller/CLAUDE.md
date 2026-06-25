@@ -1,6 +1,6 @@
 # Integration code — guidance
 
-Python custom integration `room_climate_controller`. Behavior is specified in
+Python custom integration `btoddb_room_climate_controller`. Behavior is specified in
 [../../requirements/](../../requirements/) (start at `requirements/README.md`);
 this file is about *how the code is laid out and tested*.
 
@@ -39,7 +39,7 @@ this file is about *how the code is laid out and tested*.
 The engine is tested without Home Assistant, under plain pytest:
 
 ```bash
-pytest custom_components/room_climate_controller/tests/
+pytest custom_components/btoddb_room_climate_controller/tests/
 ```
 
 `test_engine.py` uses a `_load()` import shim to pull in `engine`/`fan_logic`

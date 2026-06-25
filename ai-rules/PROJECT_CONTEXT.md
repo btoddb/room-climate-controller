@@ -6,7 +6,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## Project Overview
 
-This repo is a single Home Assistant **custom integration**, `room_climate_controller`
+This repo is a single Home Assistant **custom integration**, `btoddb_room_climate_controller`
 (HACS-installable), that does per-room climate control and scheduled daily climate
 **profiles** entirely in-process — plus a companion Lit/TypeScript Lovelace card it
 ships and auto-registers.
@@ -15,11 +15,11 @@ The repo is based on the `integration_blueprint` dev scaffold: `config/` is a th
 HA instance for local testing, `scripts/` holds dev helpers, and `requirements.txt`
 pins the HA/lint toolchain.
 
-Every directory under `custom_components/` **except `room_climate_controller`** is a
+Every directory under `custom_components/` **except `btoddb_room_climate_controller`** is a
 **vendored third-party integration** kept only for local testing (currently
 `custom_components/dreo/`). Never modify any of them. If any command — including
 `scripts/lint` — leaves changes under one of these directories, revert them; never
-commit a diff outside `room_climate_controller`.
+commit a diff outside `btoddb_room_climate_controller`.
 
 ## GitHub Workflow
 
@@ -124,12 +124,12 @@ If you leave a comment on the PR, and it is more than just a comment, tag each c
   `ruff check --fix`) — it is not a check-only command, so expect working-tree
   changes after it runs.
 - **Engine unit tests (no HA needed):**
-  `pytest custom_components/room_climate_controller/tests/`
+  `pytest custom_components/btoddb_room_climate_controller/tests/`
 - **Validate manifest/HACS:** `python3 -m script.hassfest` and the
   `.github/workflows/validate.yml` workflow.
 - **Build the card:** `scripts/deploy.sh` builds, bumps the version, and copies
   into `www/`. Edit the TypeScript source at
-  `custom_components/room_climate_controller/card/src/*.ts` — never hand-edit the
+  `custom_components/btoddb_room_climate_controller/card/src/*.ts` — never hand-edit the
   generated `www/*.js` bundle. (Card-specific guidance lives in that folder's
   `CLAUDE.md`.)
 

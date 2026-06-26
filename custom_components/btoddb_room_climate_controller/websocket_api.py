@@ -221,7 +221,7 @@ def _serialize_profile(
 # Read commands
 # ---------------------------------------------------------------------------
 @websocket_api.websocket_command(
-    {vol.Required("type"): "room_climate_controller/rooms/list"}
+    {vol.Required("type"): "btoddb_room_climate_controller/rooms/list"}
 )
 @callback
 def ws_list_rooms(
@@ -243,7 +243,7 @@ def ws_list_rooms(
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "room_climate_controller/profiles/list"}
+    {vol.Required("type"): "btoddb_room_climate_controller/profiles/list"}
 )
 @callback
 def ws_list_profiles(
@@ -268,7 +268,7 @@ def ws_list_profiles(
 # ---------------------------------------------------------------------------
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "room_climate_controller/profiles/create",
+        vol.Required("type"): "btoddb_room_climate_controller/profiles/create",
         vol.Required("name"): str,
         vol.Required("room"): str,
         vol.Optional("time"): str,
@@ -341,7 +341,7 @@ async def ws_create_profile(
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "room_climate_controller/profiles/delete",
+        vol.Required("type"): "btoddb_room_climate_controller/profiles/delete",
         vol.Required("profile_id"): str,
     }
 )
@@ -379,7 +379,7 @@ async def ws_delete_profile(
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "room_climate_controller/profiles/rename",
+        vol.Required("type"): "btoddb_room_climate_controller/profiles/rename",
         vol.Required("profile_id"): str,
         vol.Required("name"): str,
     }
@@ -430,7 +430,7 @@ async def ws_rename_profile(
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "room_climate_controller/profiles/set_room",
+        vol.Required("type"): "btoddb_room_climate_controller/profiles/set_room",
         vol.Required("profile_id"): str,
         vol.Required("room"): str,
     }
@@ -468,7 +468,7 @@ async def ws_set_room(
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "room_climate_controller/profiles/apply",
+        vol.Required("type"): "btoddb_room_climate_controller/profiles/apply",
         vol.Required("profile_id"): str,
     }
 )

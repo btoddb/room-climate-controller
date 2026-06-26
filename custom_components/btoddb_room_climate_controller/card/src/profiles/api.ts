@@ -64,25 +64,25 @@ export interface WsRoom {
 }
 
 export function wsListRooms(hass: HomeAssistant): Promise<{ rooms: WsRoom[] }> {
-  return hass.callWS!({ type: "room_climate_controller/rooms/list" });
+  return hass.callWS!({ type: "btoddb_room_climate_controller/rooms/list" });
 }
 
 export function wsListProfiles(hass: HomeAssistant): Promise<{ profiles: WsProfile[] }> {
-  return hass.callWS!({ type: "room_climate_controller/profiles/list" });
+  return hass.callWS!({ type: "btoddb_room_climate_controller/profiles/list" });
 }
 
 export function wsCreateProfile(
   hass: HomeAssistant,
   params: { name: string; room: string; time?: string; copy_room_settings?: boolean }
 ): Promise<{ profile: WsProfile }> {
-  return hass.callWS!({ type: "room_climate_controller/profiles/create", ...params });
+  return hass.callWS!({ type: "btoddb_room_climate_controller/profiles/create", ...params });
 }
 
 export function wsDeleteProfile(
   hass: HomeAssistant,
   profile_id: string
 ): Promise<{ success: boolean }> {
-  return hass.callWS!({ type: "room_climate_controller/profiles/delete", profile_id });
+  return hass.callWS!({ type: "btoddb_room_climate_controller/profiles/delete", profile_id });
 }
 
 export function wsRenameProfile(
@@ -90,7 +90,7 @@ export function wsRenameProfile(
   profile_id: string,
   name: string
 ): Promise<{ profile: WsProfile }> {
-  return hass.callWS!({ type: "room_climate_controller/profiles/rename", profile_id, name });
+  return hass.callWS!({ type: "btoddb_room_climate_controller/profiles/rename", profile_id, name });
 }
 
 export function wsSetRoom(
@@ -98,14 +98,14 @@ export function wsSetRoom(
   profile_id: string,
   room: string
 ): Promise<{ success: boolean }> {
-  return hass.callWS!({ type: "room_climate_controller/profiles/set_room", profile_id, room });
+  return hass.callWS!({ type: "btoddb_room_climate_controller/profiles/set_room", profile_id, room });
 }
 
 export function wsApplyProfile(
   hass: HomeAssistant,
   profile_id: string
 ): Promise<{ success: boolean }> {
-  return hass.callWS!({ type: "room_climate_controller/profiles/apply", profile_id });
+  return hass.callWS!({ type: "btoddb_room_climate_controller/profiles/apply", profile_id });
 }
 
 /** Extract a human message from a callWS rejection ({ code, message }). */

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Build the Room Climate Controller Lovelace card and deploy it into the
+# Build the BToddB Room Climate Controller Lovelace card and deploy it into the
 # integration's www/ directory.
 #
-# The integration serves the card at /room_climate_controller/ and auto-registers
+# The integration serves the card at /btoddb_room_climate_controller/ and auto-registers
 # it as a frontend module (add_extra_js_url) with no-cache headers, so after this
 # runs you only need to HARD-REFRESH the browser — there is no Lovelace resource
 # to add and no Home Assistant restart required.

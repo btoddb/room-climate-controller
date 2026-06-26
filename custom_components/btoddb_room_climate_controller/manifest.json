@@ -1,6 +1,6 @@
 {
   "domain": "btoddb_room_climate_controller",
-  "name": "Room Climate Controller",
+  "name": "BToddB Room Climate Controller",
   "codeowners": [
     "@btoddb"
   ],

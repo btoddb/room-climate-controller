@@ -2,15 +2,15 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up Room Climate Controller",
-        "description": "This creates the Room Climate Controller hub. After setup, add your rooms from the integration's “Add room” option.",
+        "title": "Set up BToddB Room Climate Controller",
+        "description": "This creates the BToddB Room Climate Controller hub. After setup, add your rooms from the integration's “Add room” option.",
         "data": {
           "outdoor_sensor": "Outdoor temperature sensor"
         }
       }
     },
     "abort": {
-      "single_instance_allowed": "Room Climate Controller is already configured. Add rooms from the existing entry."
+      "single_instance_allowed": "BToddB Room Climate Controller is already configured. Add rooms from the existing entry."
     }
   },
   "config_subentries": {

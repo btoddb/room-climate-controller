@@ -2,7 +2,7 @@
     "name": "btoddb/room-climate-controller",
     "image": "mcr.microsoft.com/devcontainers/base:debian",
     "postCreateCommand": {
-        "setup": "scripts/setup && npm --prefix custom_components/room_climate_controller/card install",
+        "setup": "scripts/setup && npm --prefix custom_components/btoddb_room_climate_controller/card install",
         "hassfest-alias": "echo 'alias hassfest=\"docker run --rm -v \\$(pwd):/github/workspace ghcr.io/home-assistant/hassfest:latest\"' >> ~/.zshrc"
     },
     "forwardPorts": [

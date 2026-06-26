@@ -124,7 +124,7 @@ def room_device_info(entry: ConfigEntry, room: Room) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, f"{entry.entry_id}_room_{room.key}")},
         name=room.label,
-        manufacturer="Room Climate Controller",
+        manufacturer="BToddB Room Climate Controller",
         model="Room",
         via_device=hub_identifier(entry.entry_id),
     )
@@ -135,7 +135,7 @@ def profile_device_info(entry: ConfigEntry, profile: Profile) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, f"{entry.entry_id}_profile_{profile.id}")},
         name=profile.name,
-        manufacturer="Room Climate Controller",
+        manufacturer="BToddB Room Climate Controller",
         model="Daily profile",
         via_device=hub_identifier(entry.entry_id),
     )

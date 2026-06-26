@@ -70,7 +70,7 @@ class RoomClimateConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
         if user_input is not None:
             return self.async_create_entry(
-                title="Room Climate Controller",
+                title="BToddB Room Climate Controller",
                 data={CONF_OUTDOOR_SENSOR: user_input.get(CONF_OUTDOOR_SENSOR)},
             )
         schema = vol.Schema(

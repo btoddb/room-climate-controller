@@ -1,4 +1,4 @@
-# Room Climate Controller
+# BToddB Room Climate Controller
 
 A Home Assistant custom integration (HACS-installable) that manages per-room
 climate control and scheduled daily climate **profiles** from the UI.
@@ -56,7 +56,7 @@ install, then restart Home Assistant.
 
 ### Configure
 
-1. **Settings → Devices & Services → Add Integration → "Room Climate Controller"**
+1. **Settings → Devices & Services → Add Integration → "BToddB Room Climate Controller"**
    (optionally pick the outdoor temperature source).
 2. On the entry, choose **Add room** and wire one room's devices, sensors, limits,
    and timing. Repeat per room.

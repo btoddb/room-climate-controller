@@ -1,4 +1,4 @@
-# Room Climate Controller
+# BToddB Room Climate Controller
 
 A Home Assistant **custom integration** (HACS-installable) for per-room climate
 control and scheduled daily climate **profiles**, with a companion Lovelace card

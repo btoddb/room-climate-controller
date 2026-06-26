@@ -42,7 +42,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 SERVICE_APPLY_PROFILE = "apply_profile"
 SERVICE_SET_MANUAL_MODE = "set_manual_mode"
 
-CARD_URL_BASE = "/room_climate_controller"
+CARD_URL_BASE = "/btoddb_room_climate_controller"
 CARD_FILENAME = "room-climate-control-card.js"
 
 
@@ -168,7 +168,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RoomClimateConfigEntry) 
     dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.entry_id)},
-        manufacturer="Room Climate Controller",
+        manufacturer="BToddB Room Climate Controller",
         name=entry.title,
         entry_type=dr.DeviceEntryType.SERVICE,
     )

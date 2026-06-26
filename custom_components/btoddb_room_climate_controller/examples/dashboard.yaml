@@ -1,8 +1,8 @@
-# Sample Lovelace dashboard for Room Climate Controller.
+# Sample Lovelace dashboard for BToddB Room Climate Controller.
 #
 # The card discovers each room's sensors, devices, and helpers from the
 # integration, so the only field you must set is `room` — the room key you chose
-# when adding the room (Settings -> Devices & Services -> Room Climate Controller
+# when adding the room (Settings -> Devices & Services -> BToddB Room Climate Controller
 # -> Add room). Change the keys below to match yours.
 #
 # How to use:

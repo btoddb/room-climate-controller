@@ -138,6 +138,7 @@ If you leave a comment on the PR, and it is more than just a comment, tag each c
 There are **two independent version numbers** — never hand-edit either:
 
 - **Integration:** `manifest.json` (`"version": "vX.Y.Z"` — the leading `v` is
-  intentional). Bumped only by `scripts/create-release.sh`.
+  intentional). Bumped only by `scripts/ship`, which defaults to the next minor
+  version when no version tag is provided.
 - **Card:** `card/package.json` (plain `X.Y.Z`). Bumped only by `scripts/deploy.sh`,
   which also syncs the console banner in `card/src/index.ts`.
